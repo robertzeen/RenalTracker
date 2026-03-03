@@ -1,0 +1,697 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		32C32EE32F5360F00063D338 /* RenalTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32EE22F5360F00063D338 /* RenalTrackerApp.swift */; };
+		32C32EE52F5360F00063D338 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32EE42F5360F00063D338 /* ContentView.swift */; };
+		32C32EE92F5360F30063D338 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 32C32EE82F5360F30063D338 /* Assets.xcassets */; };
+		32C32EEC2F5360F30063D338 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 32C32EEB2F5360F30063D338 /* Preview Assets.xcassets */; };
+		32C32EF62F5360F30063D338 /* RenalTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32EF52F5360F30063D338 /* RenalTrackerTests.swift */; };
+		32C32F002F5360F30063D338 /* RenalTrackerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32EFF2F5360F30063D338 /* RenalTrackerUITests.swift */; };
+		32C32F022F5360F30063D338 /* RenalTrackerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F012F5360F30063D338 /* RenalTrackerUITestsLaunchTests.swift */; };
+		32C32F132F5583540063D338 /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F122F5583540063D338 /* PreviewData.swift */; };
+		32C32F152F55BCE60063D338 /* TrackedLabTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F142F55BCE60063D338 /* TrackedLabTest.swift */; };
+		32C32F192F55C72B0063D338 /* MedicationIntake.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F182F55C72B0063D338 /* MedicationIntake.swift */; };
+		32C32F222F5723DF0063D338 /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F212F5723DF0063D338 /* DateFormatters.swift */; };
+		32C32F262F573AD50063D338 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F242F573AD50063D338 /* NotificationManager.swift */; };
+		RT0012F5360F30063D338 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0011F5360F30063D338 /* UserProfile.swift */; };
+		RT0022F5360F30063D338 /* BloodPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0021F5360F30063D338 /* BloodPressure.swift */; };
+		RT0032F5360F30063D338 /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0031F5360F30063D338 /* Weight.swift */; };
+		RT0042F5360F30063D338 /* LabResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0041F5360F30063D338 /* LabResult.swift */; };
+		RT0052F5360F30063D338 /* Medication.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0051F5360F30063D338 /* Medication.swift */; };
+		RT0062F5360F30063D338 /* WellBeing.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0061F5360F30063D338 /* WellBeing.swift */; };
+		RT0072F5360F30063D338 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0071F5360F30063D338 /* HomeView.swift */; };
+		RT0082F5360F30063D338 /* IndicatorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0081F5360F30063D338 /* IndicatorsView.swift */; };
+		RT0092F5360F30063D338 /* LabResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0091F5360F30063D338 /* LabResultsView.swift */; };
+		RT00A2F5360F30063D338 /* MedicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT00A1F5360F30063D338 /* MedicationsView.swift */; };
+		RT00B2F5360F30063D338 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT00B1F5360F30063D338 /* ProfileView.swift */; };
+		RT00C2F5360F30063D338 /* ContentPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT00C1F5360F30063D338 /* ContentPlaceholderView.swift */; };
+		RT00D2F5360F30063D338 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT00D1F5360F30063D338 /* MainTabView.swift */; };
+		RT00E2F5360F30063D338 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT00E1F5360F30063D338 /* OnboardingView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		32C32EF22F5360F30063D338 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C32ED72F5360F00063D338 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 32C32EDE2F5360F00063D338;
+			remoteInfo = RenalTracker;
+		};
+		32C32EFC2F5360F30063D338 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C32ED72F5360F00063D338 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 32C32EDE2F5360F00063D338;
+			remoteInfo = RenalTracker;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		32C32EDF2F5360F00063D338 /* RenalTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RenalTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		32C32EE22F5360F00063D338 /* RenalTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenalTrackerApp.swift; sourceTree = "<group>"; };
+		32C32EE42F5360F00063D338 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		32C32EE82F5360F30063D338 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		32C32EEB2F5360F30063D338 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		32C32EF12F5360F30063D338 /* RenalTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RenalTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		32C32EF52F5360F30063D338 /* RenalTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenalTrackerTests.swift; sourceTree = "<group>"; };
+		32C32EFB2F5360F30063D338 /* RenalTrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RenalTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		32C32EFF2F5360F30063D338 /* RenalTrackerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenalTrackerUITests.swift; sourceTree = "<group>"; };
+		32C32F012F5360F30063D338 /* RenalTrackerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenalTrackerUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		32C32F122F5583540063D338 /* PreviewData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
+		32C32F142F55BCE60063D338 /* TrackedLabTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrackedLabTest.swift; sourceTree = "<group>"; };
+		32C32F182F55C72B0063D338 /* MedicationIntake.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MedicationIntake.swift; sourceTree = "<group>"; };
+		32C32F212F5723DF0063D338 /* DateFormatters.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DateFormatters.swift; path = RenalTracker/Utils/DateFormatters.swift; sourceTree = SOURCE_ROOT; };
+		32C32F242F573AD50063D338 /* NotificationManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		RT0011F5360F30063D338 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		RT0021F5360F30063D338 /* BloodPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressure.swift; sourceTree = "<group>"; };
+		RT0031F5360F30063D338 /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
+		RT0041F5360F30063D338 /* LabResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabResult.swift; sourceTree = "<group>"; };
+		RT0051F5360F30063D338 /* Medication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Medication.swift; sourceTree = "<group>"; };
+		RT0061F5360F30063D338 /* WellBeing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WellBeing.swift; sourceTree = "<group>"; };
+		RT0071F5360F30063D338 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		RT0081F5360F30063D338 /* IndicatorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorsView.swift; sourceTree = "<group>"; };
+		RT0091F5360F30063D338 /* LabResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabResultsView.swift; sourceTree = "<group>"; };
+		RT00A1F5360F30063D338 /* MedicationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationsView.swift; sourceTree = "<group>"; };
+		RT00B1F5360F30063D338 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		RT00C1F5360F30063D338 /* ContentPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPlaceholderView.swift; sourceTree = "<group>"; };
+		RT00D1F5360F30063D338 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		RT00E1F5360F30063D338 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		32C32EDC2F5360F00063D338 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32C32EEE2F5360F30063D338 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32C32EF82F5360F30063D338 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		32C32ED62F5360F00063D338 = {
+			isa = PBXGroup;
+			children = (
+				32C32EE12F5360F00063D338 /* RenalTracker */,
+				32C32EF42F5360F30063D338 /* RenalTrackerTests */,
+				32C32EFE2F5360F30063D338 /* RenalTrackerUITests */,
+				32C32EE02F5360F00063D338 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		32C32EE02F5360F00063D338 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				32C32EDF2F5360F00063D338 /* RenalTracker.app */,
+				32C32EF12F5360F30063D338 /* RenalTrackerTests.xctest */,
+				32C32EFB2F5360F30063D338 /* RenalTrackerUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		32C32EE12F5360F00063D338 /* RenalTracker */ = {
+			isa = PBXGroup;
+			children = (
+				32C32F202F5723AF0063D338 /* Utils */,
+				32C32F122F5583540063D338 /* PreviewData.swift */,
+				32C32EE22F5360F00063D338 /* RenalTrackerApp.swift */,
+				32C32EE42F5360F00063D338 /* ContentView.swift */,
+				RTGRP1F5360F30063D338 /* Models */,
+				RTGRP2F5360F30063D338 /* Views */,
+				32C32EE82F5360F30063D338 /* Assets.xcassets */,
+				32C32EEA2F5360F30063D338 /* Preview Content */,
+			);
+			path = RenalTracker;
+			sourceTree = "<group>";
+		};
+		32C32EEA2F5360F30063D338 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				32C32EEB2F5360F30063D338 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		32C32EF42F5360F30063D338 /* RenalTrackerTests */ = {
+			isa = PBXGroup;
+			children = (
+				32C32EF52F5360F30063D338 /* RenalTrackerTests.swift */,
+			);
+			path = RenalTrackerTests;
+			sourceTree = "<group>";
+		};
+		32C32EFE2F5360F30063D338 /* RenalTrackerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				32C32EFF2F5360F30063D338 /* RenalTrackerUITests.swift */,
+				32C32F012F5360F30063D338 /* RenalTrackerUITestsLaunchTests.swift */,
+			);
+			path = RenalTrackerUITests;
+			sourceTree = "<group>";
+		};
+		32C32F202F5723AF0063D338 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				32C32F242F573AD50063D338 /* NotificationManager.swift */,
+				32C32F212F5723DF0063D338 /* DateFormatters.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		RTGRP1F5360F30063D338 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				32C32F182F55C72B0063D338 /* MedicationIntake.swift */,
+				32C32F142F55BCE60063D338 /* TrackedLabTest.swift */,
+				RT0011F5360F30063D338 /* UserProfile.swift */,
+				RT0021F5360F30063D338 /* BloodPressure.swift */,
+				RT0031F5360F30063D338 /* Weight.swift */,
+				RT0041F5360F30063D338 /* LabResult.swift */,
+				RT0051F5360F30063D338 /* Medication.swift */,
+				RT0061F5360F30063D338 /* WellBeing.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		RTGRP2F5360F30063D338 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				RT0071F5360F30063D338 /* HomeView.swift */,
+				RT0081F5360F30063D338 /* IndicatorsView.swift */,
+				RT0091F5360F30063D338 /* LabResultsView.swift */,
+				RT00A1F5360F30063D338 /* MedicationsView.swift */,
+				RT00B1F5360F30063D338 /* ProfileView.swift */,
+				RT00C1F5360F30063D338 /* ContentPlaceholderView.swift */,
+				RT00D1F5360F30063D338 /* MainTabView.swift */,
+				RT00E1F5360F30063D338 /* OnboardingView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		32C32EDE2F5360F00063D338 /* RenalTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 32C32F052F5360F30063D338 /* Build configuration list for PBXNativeTarget "RenalTracker" */;
+			buildPhases = (
+				32C32EDB2F5360F00063D338 /* Sources */,
+				32C32EDC2F5360F00063D338 /* Frameworks */,
+				32C32EDD2F5360F00063D338 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RenalTracker;
+			productName = RenalTracker;
+			productReference = 32C32EDF2F5360F00063D338 /* RenalTracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		32C32EF02F5360F30063D338 /* RenalTrackerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 32C32F082F5360F30063D338 /* Build configuration list for PBXNativeTarget "RenalTrackerTests" */;
+			buildPhases = (
+				32C32EED2F5360F30063D338 /* Sources */,
+				32C32EEE2F5360F30063D338 /* Frameworks */,
+				32C32EEF2F5360F30063D338 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				32C32EF32F5360F30063D338 /* PBXTargetDependency */,
+			);
+			name = RenalTrackerTests;
+			productName = RenalTrackerTests;
+			productReference = 32C32EF12F5360F30063D338 /* RenalTrackerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		32C32EFA2F5360F30063D338 /* RenalTrackerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 32C32F0B2F5360F30063D338 /* Build configuration list for PBXNativeTarget "RenalTrackerUITests" */;
+			buildPhases = (
+				32C32EF72F5360F30063D338 /* Sources */,
+				32C32EF82F5360F30063D338 /* Frameworks */,
+				32C32EF92F5360F30063D338 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				32C32EFD2F5360F30063D338 /* PBXTargetDependency */,
+			);
+			name = RenalTrackerUITests;
+			productName = RenalTrackerUITests;
+			productReference = 32C32EFB2F5360F30063D338 /* RenalTrackerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		32C32ED72F5360F00063D338 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1520;
+				LastUpgradeCheck = 1520;
+				TargetAttributes = {
+					32C32EDE2F5360F00063D338 = {
+						CreatedOnToolsVersion = 15.2;
+					};
+					32C32EF02F5360F30063D338 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = 32C32EDE2F5360F00063D338;
+					};
+					32C32EFA2F5360F30063D338 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = 32C32EDE2F5360F00063D338;
+					};
+				};
+			};
+			buildConfigurationList = 32C32EDA2F5360F00063D338 /* Build configuration list for PBXProject "RenalTracker" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 32C32ED62F5360F00063D338;
+			productRefGroup = 32C32EE02F5360F00063D338 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				32C32EDE2F5360F00063D338 /* RenalTracker */,
+				32C32EF02F5360F30063D338 /* RenalTrackerTests */,
+				32C32EFA2F5360F30063D338 /* RenalTrackerUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		32C32EDD2F5360F00063D338 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				32C32EEC2F5360F30063D338 /* Preview Assets.xcassets in Resources */,
+				32C32EE92F5360F30063D338 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32C32EEF2F5360F30063D338 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32C32EF92F5360F30063D338 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		32C32EDB2F5360F00063D338 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				32C32EE32F5360F00063D338 /* RenalTrackerApp.swift in Sources */,
+				32C32EE52F5360F00063D338 /* ContentView.swift in Sources */,
+				32C32F132F5583540063D338 /* PreviewData.swift in Sources */,
+				RT0012F5360F30063D338 /* UserProfile.swift in Sources */,
+				32C32F262F573AD50063D338 /* NotificationManager.swift in Sources */,
+				RT0022F5360F30063D338 /* BloodPressure.swift in Sources */,
+				RT0032F5360F30063D338 /* Weight.swift in Sources */,
+				RT0042F5360F30063D338 /* LabResult.swift in Sources */,
+				RT0052F5360F30063D338 /* Medication.swift in Sources */,
+				RT0062F5360F30063D338 /* WellBeing.swift in Sources */,
+				RT0072F5360F30063D338 /* HomeView.swift in Sources */,
+				32C32F152F55BCE60063D338 /* TrackedLabTest.swift in Sources */,
+				RT0082F5360F30063D338 /* IndicatorsView.swift in Sources */,
+				RT0092F5360F30063D338 /* LabResultsView.swift in Sources */,
+				RT00A2F5360F30063D338 /* MedicationsView.swift in Sources */,
+				RT00B2F5360F30063D338 /* ProfileView.swift in Sources */,
+				RT00C2F5360F30063D338 /* ContentPlaceholderView.swift in Sources */,
+				32C32F222F5723DF0063D338 /* DateFormatters.swift in Sources */,
+				32C32F192F55C72B0063D338 /* MedicationIntake.swift in Sources */,
+				RT00D2F5360F30063D338 /* MainTabView.swift in Sources */,
+				RT00E2F5360F30063D338 /* OnboardingView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32C32EED2F5360F30063D338 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				32C32EF62F5360F30063D338 /* RenalTrackerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32C32EF72F5360F30063D338 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				32C32F022F5360F30063D338 /* RenalTrackerUITestsLaunchTests.swift in Sources */,
+				32C32F002F5360F30063D338 /* RenalTrackerUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		32C32EF32F5360F30063D338 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 32C32EDE2F5360F00063D338 /* RenalTracker */;
+			targetProxy = 32C32EF22F5360F30063D338 /* PBXContainerItemProxy */;
+		};
+		32C32EFD2F5360F30063D338 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 32C32EDE2F5360F00063D338 /* RenalTracker */;
+			targetProxy = 32C32EFC2F5360F30063D338 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		32C32F032F5360F30063D338 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		32C32F042F5360F30063D338 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		32C32F062F5360F30063D338 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"RenalTracker/Preview Content\"";
+				DEVELOPMENT_TEAM = 87P759QX83;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertzin.RenalTracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		32C32F072F5360F30063D338 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"RenalTracker/Preview Content\"";
+				DEVELOPMENT_TEAM = 87P759QX83;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertzin.RenalTracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		32C32F092F5360F30063D338 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 87P759QX83;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertzin.RenalTrackerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RenalTracker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RenalTracker";
+			};
+			name = Debug;
+		};
+		32C32F0A2F5360F30063D338 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 87P759QX83;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertzin.RenalTrackerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RenalTracker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RenalTracker";
+			};
+			name = Release;
+		};
+		32C32F0C2F5360F30063D338 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 87P759QX83;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertzin.RenalTrackerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RenalTracker;
+			};
+			name = Debug;
+		};
+		32C32F0D2F5360F30063D338 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 87P759QX83;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertzin.RenalTrackerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RenalTracker;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		32C32EDA2F5360F00063D338 /* Build configuration list for PBXProject "RenalTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32C32F032F5360F30063D338 /* Debug */,
+				32C32F042F5360F30063D338 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		32C32F052F5360F30063D338 /* Build configuration list for PBXNativeTarget "RenalTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32C32F062F5360F30063D338 /* Debug */,
+				32C32F072F5360F30063D338 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		32C32F082F5360F30063D338 /* Build configuration list for PBXNativeTarget "RenalTrackerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32C32F092F5360F30063D338 /* Debug */,
+				32C32F0A2F5360F30063D338 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		32C32F0B2F5360F30063D338 /* Build configuration list for PBXNativeTarget "RenalTrackerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32C32F0C2F5360F30063D338 /* Debug */,
+				32C32F0D2F5360F30063D338 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 32C32ED72F5360F00063D338 /* Project object */;
+}

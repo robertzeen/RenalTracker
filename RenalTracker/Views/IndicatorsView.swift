@@ -1,0 +1,994 @@
+//
+//  IndicatorsView.swift
+//  RenalTracker
+//
+
+import SwiftUI
+import SwiftData
+import Charts
+import PDFKit
+import UIKit
+
+// Период для графиков (общий для всех)
+enum ChartPeriod: Int, CaseIterable {
+    case days7 = 7
+    case days30 = 30
+
+    var title: String {
+        switch self {
+        case .days7: return "7 дней"
+        case .days30: return "30 дней"
+        }
+    }
+}
+
+struct IndicatorsView: View {
+    @Environment(\.modelContext) private var modelContext
+
+    @Query(sort: \BloodPressure.date, order: .forward)
+    private var bloodPressureRecords: [BloodPressure]
+
+    @Query(sort: \Weight.date, order: .forward)
+    private var weightRecords: [Weight]
+
+    @State private var chartPeriod: ChartPeriod = .days7
+    @State private var isShowingAddBloodPressure = false
+    @State private var isShowingAddWeight = false
+
+    private var periodStart: Date {
+        Calendar.current.date(byAdding: .day, value: -chartPeriod.rawValue, to: Date()) ?? Date()
+    }
+
+    private var recentBloodPressureChart: [BloodPressure] {
+        bloodPressureRecords.filter { $0.date >= periodStart }
+    }
+
+    private var recentWeightChart: [Weight] {
+        weightRecords.filter { $0.date >= periodStart }
+    }
+
+    private var bloodPressureYDomain: ClosedRange<Double>? {
+        guard recentBloodPressureChart.count >= 2 else { return nil }
+
+        let values = recentBloodPressureChart.flatMap { record in
+            [Double(record.systolic), Double(record.diastolic)]
+        }
+
+        guard let minVal = values.min(), let maxVal = values.max() else { return nil }
+
+        let paddedMin = max(0, minVal - 10)
+        let paddedMax = maxVal + 10
+
+        return paddedMin...paddedMax
+    }
+
+    private var pulseYDomain: ClosedRange<Double>? {
+        guard recentBloodPressureChart.count >= 2 else { return nil }
+
+        let values = recentBloodPressureChart.map { Double($0.pulse) }
+
+        guard let minVal = values.min(), let maxVal = values.max() else { return nil }
+
+        let paddedMin = max(0, minVal - 5)
+        let paddedMax = maxVal + 5
+
+        return paddedMin...paddedMax
+    }
+
+    private var weightYDomain: ClosedRange<Double>? {
+        guard recentWeightChart.count >= 2 else { return nil }
+
+        let values = recentWeightChart.map { $0.valueKg }
+
+        guard let minVal = values.min(), let maxVal = values.max() else { return nil }
+
+        let paddedMin = max(0, minVal - 1)
+        let paddedMax = maxVal + 1
+
+        return paddedMin...paddedMax
+    }
+
+    private var ruShortDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMM"
+        return formatter
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // Переключатель периода (действует на все графики)
+                Section {
+                    Picker("Период", selection: $chartPeriod) {
+                        ForEach(ChartPeriod.allCases, id: \.rawValue) { period in
+                            Text(period.title).tag(period)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                bloodPressureSection
+                weightSection
+            }
+            .navigationTitle("Показатели")
+        }
+        .sheet(isPresented: $isShowingAddBloodPressure) {
+            AddBloodPressureSheet()
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $isShowingAddWeight) {
+            AddWeightSheet()
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    private var bloodPressureSection: some View {
+        Section {
+            // График давления
+            if recentBloodPressureChart.count < 2 {
+                Text("Недостаточно данных")
+                    .foregroundStyle(.secondary)
+            } else if let domain = bloodPressureYDomain {
+                Chart {
+                    ForEach(recentBloodPressureChart) { record in
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Давление", record.systolic)
+                        )
+                        .foregroundStyle(by: .value("Показатель", "Сист."))
+
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Давление", record.systolic)
+                        )
+                        .foregroundStyle(by: .value("Показатель", "Сист."))
+                        .symbolSize(64)
+
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Давление", record.diastolic)
+                        )
+                        .foregroundStyle(by: .value("Показатель", "Диаст."))
+
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Давление", record.diastolic)
+                        )
+                        .foregroundStyle(by: .value("Показатель", "Диаст."))
+                        .symbolSize(64)
+                    }
+                }
+                .chartYScale(domain: domain)
+                .chartForegroundStyleScale([
+                    "Сист.": .red,
+                    "Диаст.": .blue
+                ])
+                .chartLegend(.visible)
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { value in
+                        if let date = value.as(Date.self) {
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel {
+                                Text(ruShortDateFormatter.string(from: date))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 140)
+            }
+
+            // График пульса
+            if recentBloodPressureChart.count < 2 {
+                Text("Недостаточно данных")
+                    .foregroundStyle(.secondary)
+            } else if let pulseDomain = pulseYDomain {
+                Chart {
+                    ForEach(recentBloodPressureChart) { record in
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Пульс", record.pulse)
+                        )
+                        .foregroundStyle(.green)
+
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Пульс", record.pulse)
+                        )
+                        .foregroundStyle(.green)
+                        .symbolSize(64)
+                    }
+                }
+                .chartYScale(domain: pulseDomain)
+                .chartYAxisLabel("Пульс (уд/мин)")
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { value in
+                        if let date = value.as(Date.self) {
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel {
+                                Text(ruShortDateFormatter.string(from: date))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 140)
+            }
+
+            NavigationLink {
+                BloodPressureListView()
+            } label: {
+                Text("Все измерения →")
+            }
+        } header: {
+            HStack {
+                Text("ДАВЛЕНИЕ И ПУЛЬС")
+                Spacer()
+                Button {
+                    isShowingAddBloodPressure = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Добавить запись давления")
+            }
+        }
+    }
+
+    private var weightSection: some View {
+        Section {
+            if recentWeightChart.count < 2 {
+                Text("Недостаточно данных")
+                    .foregroundStyle(.secondary)
+            } else if let domain = weightYDomain {
+                Chart {
+                    ForEach(recentWeightChart) { record in
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Вес", record.valueKg)
+                        )
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Вес", record.valueKg)
+                        )
+                    }
+                }
+                .chartYScale(domain: domain)
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { value in
+                        if let date = value.as(Date.self) {
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel {
+                                Text(ruShortDateFormatter.string(from: date))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 140)
+            }
+
+            NavigationLink {
+                WeightListView()
+            } label: {
+                Text("Все измерения →")
+            }
+        } header: {
+            HStack {
+                Text("ВЕС")
+                Spacer()
+                Button {
+                    isShowingAddWeight = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Добавить запись веса")
+            }
+        }
+    }
+}
+
+// MARK: - Blood Pressure List (все записи)
+
+struct BloodPressureListView: View {
+    @Environment(\.modelContext) private var modelContext
+
+    @Query(sort: \BloodPressure.date, order: .reverse)
+    private var records: [BloodPressure]
+
+    @State private var recordToEdit: BloodPressure?
+    @State private var recordToDelete: BloodPressure?
+
+    @State private var showExportDialog = false
+    @State private var pdfURL: URL?
+    @State private var isSharePresented = false
+
+    private enum ExportPeriod {
+        case days7
+        case days30
+        case all
+
+        var title: String {
+            switch self {
+            case .days7: return "За 7 дней"
+            case .days30: return "За 30 дней"
+            case .all: return "Все данные"
+            }
+        }
+    }
+
+    private var calendar: Calendar {
+        var cal = Calendar.current
+        cal.locale = Locale(identifier: "ru_RU")
+        return cal
+    }
+
+    private var monthFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter
+    }
+
+    private var groupedByMonth: [(date: Date, records: [BloodPressure])] {
+        let grouped = Dictionary(grouping: records) { record -> Date in
+            let comps = calendar.dateComponents([.year, .month], from: record.date)
+            return calendar.date(from: comps) ?? record.date
+        }
+
+        return grouped
+            .map { (key, value) in
+                let sorted = value.sorted { $0.date > $1.date }
+                return (date: key, records: sorted)
+            }
+            .sorted { $0.date > $1.date }
+    }
+
+    var body: some View {
+        Group {
+            if records.isEmpty {
+                ContentUnavailableView(
+                    "Нет записей",
+                    systemImage: "heart.text.square",
+                    description: Text("Добавьте измерение давления на экране «Показатели»")
+                )
+            } else {
+                List {
+                    ForEach(groupedByMonth, id: \.date) { group in
+                        Section(header: Text(monthFormatter.string(from: group.date).capitalized)) {
+                            ForEach(group.records) { record in
+                                Button {
+                                    recordToEdit = record
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("\(record.systolic)/\(record.diastolic) мм рт. ст., пульс \(record.pulse)")
+                                            .font(.body)
+                                        Text(DateFormatter.russianDateTime.string(from: record.date))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        recordToDelete = record
+                                    } label: {
+                                        Label("Удалить", systemImage: "trash")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Давление и пульс")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if !records.isEmpty {
+                    Button {
+                        showExportDialog = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Экспорт PDF")
+                }
+            }
+        }
+        .sheet(item: $recordToEdit) { record in
+            EditBloodPressureSheet(record: record)
+                .presentationDetents([.medium, .large])
+        }
+        .alert("Вы уверены, что хотите удалить запись?",
+               isPresented: Binding(
+                    get: { recordToDelete != nil },
+                    set: { newValue in
+                        if !newValue { recordToDelete = nil }
+                    }
+               )) {
+            Button("Отмена", role: .cancel) { }
+            Button("Удалить", role: .destructive) {
+                if let record = recordToDelete {
+                    modelContext.delete(record)
+                    try? modelContext.save()
+                }
+                recordToDelete = nil
+            }
+        }
+        .confirmationDialog("Экспорт PDF", isPresented: $showExportDialog, titleVisibility: .visible) {
+            Button(ExportPeriod.days7.title) {
+                exportPDF(for: .days7)
+            }
+            Button(ExportPeriod.days30.title) {
+                exportPDF(for: .days30)
+            }
+            Button(ExportPeriod.all.title) {
+                exportPDF(for: .all)
+            }
+            Button("Отмена", role: .cancel) { }
+        }
+        .sheet(isPresented: $isSharePresented) {
+            if let url = pdfURL {
+                ShareSheet(activityItems: [url])
+            }
+        }
+    }
+
+    // MARK: - PDF Export
+
+    @MainActor
+    private func exportPDF(for period: ExportPeriod) {
+        let filteredRecords: [BloodPressure]
+        let now = Date()
+
+        switch period {
+        case .days7:
+            let from = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+            filteredRecords = records.filter { $0.date >= from }
+        case .days30:
+            let from = calendar.date(byAdding: .day, value: -30, to: now) ?? now
+            filteredRecords = records.filter { $0.date >= from }
+        case .all:
+            filteredRecords = records
+        }
+
+        guard !filteredRecords.isEmpty else { return }
+
+        let periodDescription: String
+        switch period {
+        case .days7: periodDescription = "за последние 7 дней"
+        case .days30: periodDescription = "за последние 30 дней"
+        case .all: periodDescription = "за весь период наблюдения"
+        }
+
+        guard let data = generatePDFData(records: filteredRecords, periodDescription: periodDescription) else { return }
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("BPReport-\(UUID().uuidString).pdf")
+        do {
+            try data.write(to: tempURL)
+            pdfURL = tempURL
+            isSharePresented = true
+        } catch {
+            print("Failed to write PDF: \(error)")
+        }
+    }
+
+    @MainActor
+    private func generatePDFData(records: [BloodPressure], periodDescription: String) -> Data? {
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842) // A4 @ 72 dpi
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+
+        let data = renderer.pdfData { context in
+            context.beginPage()
+
+            let margin: CGFloat = 32
+            var y: CGFloat = margin
+
+            // Заголовки
+            let title = "Отчёт по давлению и пульсу"
+            let subtitle = "\(periodDescription.capitalized)\nСформировано: \(DateFormatter.russianDateTime.string(from: Date()))"
+
+            let titleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 20, weight: .bold)
+            ]
+            let subtitleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12)
+            ]
+
+            (title as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
+            y += 28
+            (subtitle as NSString).draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 60), withAttributes: subtitleAttributes)
+            y += 60
+
+            // График давления
+            let bpChartView = PDFBloodPressureChartView(records: records)
+            let bpRenderer = ImageRenderer(content: bpChartView)
+            bpRenderer.proposedSize = .init(width: 500, height: 200)
+            if let bpImage = bpRenderer.uiImage {
+                let chartHeight: CGFloat = 160
+                let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
+                bpImage.draw(in: chartRect)
+                y += chartHeight + 16
+            }
+
+            // График пульса
+            let pulseChartView = PulseChartForPDF(records: records)
+            let pulseRenderer = ImageRenderer(content: pulseChartView)
+            pulseRenderer.proposedSize = .init(width: 500, height: 200)
+            if let pulseImage = pulseRenderer.uiImage {
+                let chartHeight: CGFloat = 160
+                let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
+                pulseImage.draw(in: chartRect)
+                y += chartHeight + 16
+            }
+
+            // Таблица заголовков
+            let contentWidth = pageRect.width - 2 * margin
+            let dateWidth = contentWidth * 0.25
+            let timeWidth = contentWidth * 0.15
+            let systWidth = contentWidth * 0.2
+            let diastWidth = contentWidth * 0.2
+            let pulseWidth = contentWidth * 0.2
+            let rowHeight: CGFloat = 16
+
+            let headerFont = UIFont.systemFont(ofSize: 12, weight: .semibold)
+            let headerAttributes: [NSAttributedString.Key: Any] = [.font: headerFont]
+            let rowFont = UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+            let rowAttributes: [NSAttributedString.Key: Any] = [.font: rowFont]
+
+            // Заголовок таблицы
+            let dateHeaderRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
+            let timeHeaderRect = CGRect(x: margin + dateWidth, y: y, width: timeWidth, height: rowHeight)
+            let systHeaderRect = CGRect(x: margin + dateWidth + timeWidth, y: y, width: systWidth, height: rowHeight)
+            let diastHeaderRect = CGRect(x: margin + dateWidth + timeWidth + systWidth, y: y, width: diastWidth, height: rowHeight)
+            let pulseHeaderRect = CGRect(x: margin + dateWidth + timeWidth + systWidth + diastWidth, y: y, width: pulseWidth, height: rowHeight)
+
+            ("Дата" as NSString).draw(in: dateHeaderRect, withAttributes: headerAttributes)
+            ("Время" as NSString).draw(in: timeHeaderRect, withAttributes: headerAttributes)
+            ("Сист." as NSString).draw(in: systHeaderRect, withAttributes: headerAttributes)
+            ("Диаст." as NSString).draw(in: diastHeaderRect, withAttributes: headerAttributes)
+            ("Пульс" as NSString).draw(in: pulseHeaderRect, withAttributes: headerAttributes)
+
+            y += rowHeight + 2
+
+            let dateFormatter = DateFormatter.russianDate
+            let timeFormatter = DateFormatter.russianTime
+
+            for record in records.sorted(by: { $0.date > $1.date }) {
+                if y > pageRect.height - margin - 80 {
+                    context.beginPage()
+                    y = margin
+                }
+                let dateString = dateFormatter.string(from: record.date)
+                let timeString = timeFormatter.string(from: record.date)
+                let systString = "\(record.systolic)"
+                let diastString = "\(record.diastolic)"
+                let pulseString = "\(record.pulse)"
+
+                let dateRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
+                let timeRect = CGRect(x: margin + dateWidth, y: y, width: timeWidth, height: rowHeight)
+                let systRect = CGRect(x: margin + dateWidth + timeWidth, y: y, width: systWidth, height: rowHeight)
+                let diastRect = CGRect(x: margin + dateWidth + timeWidth + systWidth, y: y, width: diastWidth, height: rowHeight)
+                let pulseRect = CGRect(x: margin + dateWidth + timeWidth + systWidth + diastWidth, y: y, width: pulseWidth, height: rowHeight)
+
+                (dateString as NSString).draw(in: dateRect, withAttributes: rowAttributes)
+                (timeString as NSString).draw(in: timeRect, withAttributes: rowAttributes)
+                (systString as NSString).draw(in: systRect, withAttributes: rowAttributes)
+                (diastString as NSString).draw(in: diastRect, withAttributes: rowAttributes)
+                (pulseString as NSString).draw(in: pulseRect, withAttributes: rowAttributes)
+
+                y += rowHeight
+            }
+
+            // Статистика
+            let systolicValues = records.map { Double($0.systolic) }
+            let diastolicValues = records.map { Double($0.diastolic) }
+            let pulseValues = records.map { Double($0.pulse) }
+
+            func statsString(name: String, values: [Double]) -> String {
+                guard let min = values.min(), let max = values.max() else { return "" }
+                let avg = values.reduce(0, +) / Double(values.count)
+                return String(format: "%@: мин %.0f, макс %.0f, ср %.1f", name, min, max, avg)
+            }
+
+            y += 16
+            ("Итоги за период:" as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
+            y += 20
+
+            let lines = [
+                statsString(name: "Систолическое", values: systolicValues),
+                statsString(name: "Диастолическое", values: diastolicValues),
+                statsString(name: "Пульс", values: pulseValues)
+            ]
+
+            for line in lines where !line.isEmpty {
+                (line as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: subtitleAttributes)
+                y += 16
+            }
+        }
+
+        // Обёртка через PDFKit (по требованию задачи)
+        _ = PDFDocument(data: data)
+        return data
+    }
+}
+
+// MARK: - Weight List (все записи)
+
+struct WeightListView: View {
+    @Environment(\.modelContext) private var modelContext
+
+    @Query(sort: \Weight.date, order: .reverse)
+    private var records: [Weight]
+
+    @State private var recordToEdit: Weight?
+    @State private var recordToDelete: Weight?
+
+    var body: some View {
+        Group {
+            if records.isEmpty {
+                ContentUnavailableView(
+                    "Нет записей",
+                    systemImage: "scalemass",
+                    description: Text("Добавьте измерение веса на экране «Показатели»")
+                )
+            } else {
+                List {
+                    ForEach(records) { record in
+                        Button {
+                            recordToEdit = record
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(String(format: "%.1f кг", record.valueKg))
+                                    .font(.body)
+                                Text(DateFormatter.russianDateTime.string(from: record.date))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                recordToDelete = record
+                            } label: {
+                                Label("Удалить", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Вес")
+        .sheet(item: $recordToEdit) { record in
+            EditWeightSheet(record: record)
+                .presentationDetents([.medium, .large])
+        }
+        .alert("Вы уверены, что хотите удалить запись?",
+               isPresented: Binding(
+                    get: { recordToDelete != nil },
+                    set: { newValue in
+                        if !newValue { recordToDelete = nil }
+                    }
+               )) {
+            Button("Отмена", role: .cancel) { }
+            Button("Удалить", role: .destructive) {
+                if let record = recordToDelete {
+                    modelContext.delete(record)
+                    try? modelContext.save()
+                }
+                recordToDelete = nil
+            }
+        }
+    }
+}
+
+// MARK: - Вспомогательные графики для PDF
+
+private struct PDFBloodPressureChartView: View {
+    let records: [BloodPressure]
+
+    var body: some View {
+        let sorted = records.sorted { $0.date < $1.date }
+        let systolicValues = sorted.map { Double($0.systolic) }
+        let diastolicValues = sorted.map { Double($0.diastolic) }
+        let minDia = diastolicValues.min() ?? 0
+        let maxSys = systolicValues.max() ?? 0
+        let minY = max(0, minDia - 10)
+        let maxY = maxSys + 10
+
+        return Chart {
+            ForEach(sorted) { record in
+                LineMark(
+                    x: .value("Дата", record.date),
+                    y: .value("Давление", record.systolic)
+                )
+                .foregroundStyle(.red)
+
+                LineMark(
+                    x: .value("Дата", record.date),
+                    y: .value("Давление", record.diastolic)
+                )
+                .foregroundStyle(.blue)
+            }
+        }
+        .chartYScale(domain: minY...maxY)
+        .frame(height: 200)
+        .padding()
+    }
+}
+
+private struct PulseChartForPDF: View {
+    let records: [BloodPressure]
+
+    var body: some View {
+        Chart {
+            ForEach(records.sorted { $0.date < $1.date }) { record in
+                LineMark(
+                    x: .value("Дата", record.date),
+                    y: .value("Пульс", record.pulse)
+                )
+                .foregroundStyle(.green)
+            }
+        }
+        .frame(height: 200)
+        .padding()
+    }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    var activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Add Blood Pressure Sheet
+
+private struct AddBloodPressureSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var systolic: Int = 120
+    @State private var diastolic: Int = 80
+    @State private var pulse: Int = 70
+    @State private var date: Date = Date()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Давление и пульс") {
+                    TextField("Систолическое (верхнее)", value: $systolic, format: .number)
+                        .keyboardType(.numberPad)
+
+                    TextField("Диастолическое (нижнее)", value: $diastolic, format: .number)
+                        .keyboardType(.numberPad)
+
+                    TextField("Пульс", value: $pulse, format: .number)
+                        .keyboardType(.numberPad)
+                }
+
+                Section("Дата и время") {
+                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                }
+            }
+            .navigationTitle("Новая запись давления")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Сохранить") {
+                        save()
+                    }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        let record = BloodPressure(
+            systolic: systolic,
+            diastolic: diastolic,
+            pulse: pulse,
+            date: date
+        )
+        modelContext.insert(record)
+        try? modelContext.save()
+        dismiss()
+    }
+}
+
+// MARK: - Edit Blood Pressure Sheet
+
+private struct EditBloodPressureSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    let record: BloodPressure
+
+    @State private var systolic: Int
+    @State private var diastolic: Int
+    @State private var pulse: Int
+    @State private var date: Date
+
+    init(record: BloodPressure) {
+        self.record = record
+        _systolic = State(initialValue: record.systolic)
+        _diastolic = State(initialValue: record.diastolic)
+        _pulse = State(initialValue: record.pulse)
+        _date = State(initialValue: record.date)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Давление и пульс") {
+                    TextField("Систолическое (верхнее)", value: $systolic, format: .number)
+                        .keyboardType(.numberPad)
+
+                    TextField("Диастолическое (нижнее)", value: $diastolic, format: .number)
+                        .keyboardType(.numberPad)
+
+                    TextField("Пульс", value: $pulse, format: .number)
+                        .keyboardType(.numberPad)
+                }
+
+                Section("Дата и время") {
+                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                }
+            }
+            .navigationTitle("Редактирование")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Сохранить изменения") {
+                        save()
+                    }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        record.systolic = systolic
+        record.diastolic = diastolic
+        record.pulse = pulse
+        record.date = date
+        try? modelContext.save()
+        dismiss()
+    }
+}
+
+// MARK: - Add Weight Sheet
+
+private struct AddWeightSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var weightValue: Double = 70.0
+    @State private var date: Date = Date()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Вес") {
+                    TextField("Вес (кг)", value: $weightValue, format: .number)
+                        .keyboardType(.decimalPad)
+                }
+
+                Section("Дата и время") {
+                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                }
+            }
+            .navigationTitle("Новая запись веса")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Сохранить") {
+                        save()
+                    }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        let record = Weight(
+            valueKg: weightValue,
+            date: date
+        )
+        modelContext.insert(record)
+        try? modelContext.save()
+        dismiss()
+    }
+}
+
+// MARK: - Edit Weight Sheet
+
+private struct EditWeightSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    let record: Weight
+
+    @State private var weightValue: Double
+    @State private var date: Date
+
+    init(record: Weight) {
+        self.record = record
+        _weightValue = State(initialValue: record.valueKg)
+        _date = State(initialValue: record.date)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Вес") {
+                    TextField("Вес (кг)", value: $weightValue, format: .number)
+                        .keyboardType(.decimalPad)
+                }
+
+                Section("Дата и время") {
+                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                }
+            }
+            .navigationTitle("Редактирование")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Сохранить изменения") {
+                        save()
+                    }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        record.valueKg = weightValue
+        record.date = date
+        try? modelContext.save()
+        dismiss()
+    }
+}
+
+// MARK: - Identifiable for sheet(item:)
+
+extension BloodPressure: Identifiable {
+    var id: PersistentIdentifier { persistentModelID }
+}
+
+extension Weight: Identifiable {
+    var id: PersistentIdentifier { persistentModelID }
+}
+
+#Preview {
+    IndicatorsView()
+        .modelContainer(for: [
+            BloodPressure.self,
+            Weight.self
+        ], inMemory: true)
+}
