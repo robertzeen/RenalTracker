@@ -25,9 +25,15 @@ struct HomeView: View {
 
     /// Опциональный колбэк для переключения на вкладку «Лекарства»
     var onShowMedications: (() -> Void)?
+    /// Опциональный колбэк для переключения на вкладку «Приёмы»
+    var onShowDoctorVisits: (() -> Void)?
 
-    init(onShowMedications: (() -> Void)? = nil) {
+    init(
+        onShowMedications: (() -> Void)? = nil,
+        onShowDoctorVisits: (() -> Void)? = nil
+    ) {
         self.onShowMedications = onShowMedications
+        self.onShowDoctorVisits = onShowDoctorVisits
     }
 
     private var currentProfile: UserProfile? {
@@ -305,6 +311,13 @@ struct HomeView: View {
             HStack {
                 Text("Следующий приём у врача")
                     .font(.headline)
+                Spacer()
+                if onShowDoctorVisits != nil {
+                    Button("Журнал →") {
+                        onShowDoctorVisits?()
+                    }
+                    .font(.footnote)
+                }
             }
 
             if appointment == nil {

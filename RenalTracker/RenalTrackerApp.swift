@@ -17,7 +17,8 @@ struct RenalTrackerApp: App {
             Medication.self,
             MedicationIntake.self,
             WellBeing.self,
-            TrackedLabTest.self
+            TrackedLabTest.self,
+            DoctorVisit.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

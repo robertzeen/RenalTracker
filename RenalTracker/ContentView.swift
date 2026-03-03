@@ -40,6 +40,7 @@ struct ContentView: View {
             Weight.self,
             LabResult.self,
             Medication.self,
-            WellBeing.self
+            WellBeing.self,
+            DoctorVisit.self
         ], inMemory: true)
 }
