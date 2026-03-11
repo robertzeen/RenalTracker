@@ -10,16 +10,12 @@ import PDFKit
 import UIKit
 
 // Период для графиков (общий для всех)
-enum ChartPeriod: Int, CaseIterable {
-    case days7 = 7
-    case days30 = 30
+enum ChartPeriod: String, CaseIterable {
+    case days7 = "7 дней"
+    case days30 = "30 дней"
+    case all = "Всё время"
 
-    var title: String {
-        switch self {
-        case .days7: return "7 дней"
-        case .days30: return "30 дней"
-        }
-    }
+    var title: String { rawValue }
 }
 
 struct IndicatorsView: View {
@@ -35,16 +31,26 @@ struct IndicatorsView: View {
     @State private var isShowingAddBloodPressure = false
     @State private var isShowingAddWeight = false
 
-    private var periodStart: Date {
-        Calendar.current.date(byAdding: .day, value: -chartPeriod.rawValue, to: Date()) ?? Date()
-    }
-
     private var recentBloodPressureChart: [BloodPressure] {
-        bloodPressureRecords.filter { $0.date >= periodStart }
+        switch chartPeriod {
+        case .days7:
+            return bloodPressureRecords.filter { $0.date >= Date().addingTimeInterval(-7 * 24 * 3600) }
+        case .days30:
+            return bloodPressureRecords.filter { $0.date >= Date().addingTimeInterval(-30 * 24 * 3600) }
+        case .all:
+            return bloodPressureRecords
+        }
     }
 
     private var recentWeightChart: [Weight] {
-        weightRecords.filter { $0.date >= periodStart }
+        switch chartPeriod {
+        case .days7:
+            return weightRecords.filter { $0.date >= Date().addingTimeInterval(-7 * 24 * 3600) }
+        case .days30:
+            return weightRecords.filter { $0.date >= Date().addingTimeInterval(-30 * 24 * 3600) }
+        case .all:
+            return weightRecords
+        }
     }
 
     private var bloodPressureYDomain: ClosedRange<Double>? {
@@ -165,17 +171,7 @@ struct IndicatorsView: View {
                     "Диаст.": .blue
                 ])
                 .chartLegend(.visible)
-                .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
-                        if let date = value.as(Date.self) {
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel {
-                                Text(ruShortDateFormatter.string(from: date))
-                            }
-                        }
-                    }
-                }
+                .chartXAxis(.hidden)
                 .frame(height: 140)
             }
 
@@ -202,17 +198,7 @@ struct IndicatorsView: View {
                 }
                 .chartYScale(domain: pulseDomain)
                 .chartYAxisLabel("Пульс (уд/мин)")
-                .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
-                        if let date = value.as(Date.self) {
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel {
-                                Text(ruShortDateFormatter.string(from: date))
-                            }
-                        }
-                    }
-                }
+                .chartXAxis(.hidden)
                 .frame(height: 140)
             }
 
@@ -255,17 +241,7 @@ struct IndicatorsView: View {
                     }
                 }
                 .chartYScale(domain: domain)
-                .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
-                        if let date = value.as(Date.self) {
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel {
-                                Text(ruShortDateFormatter.string(from: date))
-                            }
-                        }
-                    }
-                }
+                .chartXAxis(.hidden)
                 .frame(height: 140)
             }
 
@@ -504,8 +480,10 @@ struct BloodPressureListView: View {
 
             // График давления
             let bpChartView = PDFBloodPressureChartView(records: records)
+                .padding(16)
+                .clipped()
             let bpRenderer = ImageRenderer(content: bpChartView)
-            bpRenderer.proposedSize = .init(width: 500, height: 200)
+            bpRenderer.proposedSize = ProposedViewSize(width: 480, height: 180)
             if let bpImage = bpRenderer.uiImage {
                 let chartHeight: CGFloat = 160
                 let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
@@ -515,8 +493,10 @@ struct BloodPressureListView: View {
 
             // График пульса
             let pulseChartView = PulseChartForPDF(records: records)
+                .padding(16)
+                .clipped()
             let pulseRenderer = ImageRenderer(content: pulseChartView)
-            pulseRenderer.proposedSize = .init(width: 500, height: 200)
+            pulseRenderer.proposedSize = ProposedViewSize(width: 480, height: 180)
             if let pulseImage = pulseRenderer.uiImage {
                 let chartHeight: CGFloat = 160
                 let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
@@ -698,6 +678,13 @@ private struct PDFBloodPressureChartView: View {
         let minY = max(0, minDia - 10)
         let maxY = maxSys + 10
 
+        let shortDateFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "ru_RU")
+            f.dateFormat = "d MMM"
+            return f
+        }()
+
         return Chart {
             ForEach(sorted) { record in
                 LineMark(
@@ -714,8 +701,18 @@ private struct PDFBloodPressureChartView: View {
             }
         }
         .chartYScale(domain: minY...maxY)
+        .chartXAxis {
+            AxisMarks(values: .automatic) { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(shortDateFormatter.string(from: date))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
         .frame(height: 200)
-        .padding()
     }
 }
 
@@ -723,8 +720,22 @@ private struct PulseChartForPDF: View {
     let records: [BloodPressure]
 
     var body: some View {
-        Chart {
-            ForEach(records.sorted { $0.date < $1.date }) { record in
+        let sorted = records.sorted { $0.date < $1.date }
+        let pulseValues = sorted.map { Double($0.pulse) }
+        let minPulse = pulseValues.min() ?? 0
+        let maxPulse = pulseValues.max() ?? 0
+        let minY = max(0, minPulse - 5)
+        let maxY = maxPulse + 5
+
+        let shortDateFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "ru_RU")
+            f.dateFormat = "d MMM"
+            return f
+        }()
+
+        return Chart {
+            ForEach(sorted) { record in
                 LineMark(
                     x: .value("Дата", record.date),
                     y: .value("Пульс", record.pulse)
@@ -732,8 +743,19 @@ private struct PulseChartForPDF: View {
                 .foregroundStyle(.green)
             }
         }
+        .chartYScale(domain: minY...maxY)
+        .chartXAxis {
+            AxisMarks(values: .automatic) { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(shortDateFormatter.string(from: date))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
         .frame(height: 200)
-        .padding()
     }
 }
 
@@ -764,14 +786,7 @@ private struct AddBloodPressureSheet: View {
         NavigationStack {
             Form {
                 Section("Давление и пульс") {
-                    TextField("Систолическое (верхнее)", value: $systolic, format: .number)
-                        .keyboardType(.numberPad)
-
-                    TextField("Диастолическое (нижнее)", value: $diastolic, format: .number)
-                        .keyboardType(.numberPad)
-
-                    TextField("Пульс", value: $pulse, format: .number)
-                        .keyboardType(.numberPad)
+                    BPWheelPicker(systolic: $systolic, diastolic: $diastolic, pulse: $pulse)
                 }
 
                 Section("Дата и время") {
@@ -779,29 +794,21 @@ private struct AddBloodPressureSheet: View {
                         .environment(\.locale, Locale(identifier: "ru_RU"))
                 }
             }
-            .navigationTitle("Новая запись давления")
+            .navigationTitle("Давление и пульс")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                        save()
-                    }
+                    Button("Сохранить") { save() }
                 }
             }
         }
     }
 
     private func save() {
-        let record = BloodPressure(
-            systolic: systolic,
-            diastolic: diastolic,
-            pulse: pulse,
-            date: date
-        )
+        let record = BloodPressure(systolic: systolic, diastolic: diastolic, pulse: pulse, date: date)
         modelContext.insert(record)
         try? modelContext.save()
         dismiss()
@@ -823,9 +830,9 @@ private struct EditBloodPressureSheet: View {
 
     init(record: BloodPressure) {
         self.record = record
-        _systolic = State(initialValue: record.systolic)
-        _diastolic = State(initialValue: record.diastolic)
-        _pulse = State(initialValue: record.pulse)
+        _systolic = State(initialValue: max(60, min(250, record.systolic)))
+        _diastolic = State(initialValue: max(40, min(150, record.diastolic)))
+        _pulse = State(initialValue: max(30, min(250, record.pulse)))
         _date = State(initialValue: record.date)
     }
 
@@ -833,31 +840,22 @@ private struct EditBloodPressureSheet: View {
         NavigationStack {
             Form {
                 Section("Давление и пульс") {
-                    TextField("Систолическое (верхнее)", value: $systolic, format: .number)
-                        .keyboardType(.numberPad)
-
-                    TextField("Диастолическое (нижнее)", value: $diastolic, format: .number)
-                        .keyboardType(.numberPad)
-
-                    TextField("Пульс", value: $pulse, format: .number)
-                        .keyboardType(.numberPad)
+                    BPWheelPicker(systolic: $systolic, diastolic: $diastolic, pulse: $pulse)
                 }
 
                 Section("Дата и время") {
                     DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                        .environment(\.locale, Locale(identifier: "ru_RU"))
                 }
             }
             .navigationTitle("Редактирование")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить изменения") {
-                        save()
-                    }
+                    Button("Сохранить изменения") { save() }
                 }
             }
         }
@@ -870,6 +868,64 @@ private struct EditBloodPressureSheet: View {
         record.date = date
         try? modelContext.save()
         dismiss()
+    }
+}
+
+// MARK: - Shared wheel picker
+
+private struct BPWheelPicker: View {
+    @Binding var systolic: Int
+    @Binding var diastolic: Int
+    @Binding var pulse: Int
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 0) {
+                Picker("", selection: $systolic) {
+                    ForEach(60...250, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+
+                Text("/")
+                    .font(.title2)
+                    .padding(.horizontal, 4)
+
+                Picker("", selection: $diastolic) {
+                    ForEach(40...150, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 8)
+
+                Picker("", selection: $pulse) {
+                    ForEach(30...250, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+            }
+
+            HStack(spacing: 0) {
+                Text("Сист.")
+                    .frame(width: 80)
+                Spacer()
+                    .frame(width: 20)
+                Text("Диаст.")
+                    .frame(width: 80)
+                Spacer()
+                    .frame(width: 40)
+                Text("Пульс")
+                    .frame(width: 80)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -896,6 +952,7 @@ private struct AddWeightSheet: View {
                 }
             }
             .navigationTitle("Новая запись веса")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") {
@@ -952,6 +1009,7 @@ private struct EditWeightSheet: View {
                 }
             }
             .navigationTitle("Редактирование")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") {

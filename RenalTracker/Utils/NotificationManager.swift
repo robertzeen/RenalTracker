@@ -61,7 +61,8 @@ final class NotificationManager {
         } else {
             content.body = "Не забудьте взять результаты анализов."
         }
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("notification.caf"))
+        content.badge = 1
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
         let request = UNNotificationRequest(identifier: "doctor_appointment", content: content, trigger: trigger)
@@ -89,7 +90,8 @@ final class NotificationManager {
         let content = UNMutableNotificationContent()
         content.title = "Завтра в \(timeString) сдача анализов 🧪"
         content.body = "Не забудьте взять направление и список показателей"
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("notification.caf"))
+        content.badge = 1
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
         let request = UNNotificationRequest(identifier: "lab_test", content: content, trigger: trigger)
@@ -126,6 +128,12 @@ final class NotificationManager {
     /// Группирует лекарства по (день недели, время) и создаёт уведомления для каждой группы.
     private func scheduleNotifications(for medications: [Medication]) {
         let activeMeds = medications.filter { $0.isActive && !$0.daysOfWeek.isEmpty }
+
+        print("[Notifications] scheduleNotifications: \(activeMeds.count) активных лекарств")
+        for med in activeMeds {
+            print("[Notifications]   \(med.name), time: \(med.time), days: \(med.daysOfWeek)")
+        }
+
         guard !activeMeds.isEmpty else { return }
 
         var groups: [Key: [Medication]] = [:]
@@ -165,7 +173,8 @@ final class NotificationManager {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("notification.caf"))
+        content.badge = 1
 
         var dateComponents = DateComponents()
         dateComponents.weekday = key.weekday
@@ -181,14 +190,25 @@ final class NotificationManager {
     }
 
     private func dosageDescription(for med: Medication) -> String {
-        if let amount = med.dosageAmount {
-            if med.dosageUnit.isEmpty {
-                return String(format: "%.1f", amount)
-            } else {
-                return String(format: "%.1f %@", amount, med.dosageUnit)
+        let dosage = med.formattedDosage
+        return dosage.isEmpty ? med.name : "\(med.name) \(dosage)"
+    }
+
+    // MARK: - Диагностика
+
+    /// Печатает в консоль все запланированные уведомления (для отладки).
+    func printScheduledNotifications() {
+        center.getPendingNotificationRequests { requests in
+            print("=== Запланированные уведомления: \(requests.count) ===")
+            for request in requests {
+                print("ID: \(request.identifier)")
+                print("Trigger: \(String(describing: request.trigger))")
+                print("Content: \(request.content.title) — \(request.content.body)")
+                print("---")
             }
-        } else {
-            return med.dosageUnit.isEmpty ? med.name : "\(med.name) \(med.dosageUnit)"
+            if requests.isEmpty {
+                print("(нет запланированных уведомлений)")
+            }
         }
     }
 }

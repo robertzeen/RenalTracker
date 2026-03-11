@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct RenalTrackerApp: App {
@@ -32,6 +33,21 @@ struct RenalTrackerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    UNUserNotificationCenter.current().requestAuthorization(
+                        options: [.alert, .sound, .badge]
+                    ) { granted, error in
+                        if let error {
+                            print("[Notifications] requestAuthorization error: \(error)")
+                        }
+                        print("[Notifications] Authorization granted: \(granted)")
+                    }
+                    UNUserNotificationCenter.current().setBadgeCount(0) { error in
+                        if let error {
+                            print("[Notifications] setBadgeCount error: \(error)")
+                        }
+                    }
+                }
         }
         .modelContainer(sharedModelContainer)
     }

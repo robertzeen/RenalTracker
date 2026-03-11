@@ -15,7 +15,11 @@ struct HomeView: View {
     @State private var isShowingLabTestDateSheet = false
     @State private var labTestDatePicker: Date = Date()
 
+    @State private var isShowingSettings = false
     @State private var doctorAppointmentDoctorName: String = ""
+
+    @State private var currentTime = Date()
+    @State private var refreshTimer: Timer?
 
     @Query private var profiles: [UserProfile]
     @Query(sort: \BloodPressure.date, order: .reverse) private var bloodPressureRecords: [BloodPressure]
@@ -93,36 +97,70 @@ struct HomeView: View {
 
     private var dailyQuote: (text: String, author: String) {
         let quotes: [(String, String)] = [
-            ("Даже маленький шаг вперёд — это движение к цели.", "Неизвестный автор"),
-            ("Сила духа измеряется не отсутствием боли, а умением идти дальше несмотря на неё.", "Неизвестный автор"),
-            ("Каждый новый день — шанс позаботиться о себе чуть лучше, чем вчера.", "Неизвестный автор"),
-            ("Ты сильнее, чем думаешь, и важнее, чем представляешь.", "Неизвестный автор"),
-            ("Здоровье — это путь, а не пункт назначения. Главное — не останавливаться.", "Неизвестный автор"),
-            ("Иногда самое большое мужество — просто продолжать жить и лечиться.", "Неизвестный автор"),
-            ("Помощь принимать так же важно, как и помогать другим.", "Неизвестный автор"),
-            ("Каждый анализ — это не приговор, а подсказка, как двигаться дальше.", "Неизвестный автор"),
-            ("Твоё тело борется каждый день. Дай ему поддержку и терпение.", "Неизвестный автор"),
-            ("Надежда — это тишина внутри, которая шепчет: ‘Мы справимся’.", "Неизвестный автор"),
-            ("Иногда прогресс незаметен, но он есть в каждом дне, когда ты не сдаёшься.", "Неизвестный автор"),
-            ("Слабость — не признак поражения, а знак того, что ты долго был силой для других.", "Неизвестный автор"),
-            ("Даже самые тяжёлые дни когда‑нибудь остаются позади.", "Неизвестный автор"),
-            ("Ты имеешь право на усталость, но не обязан сдаваться.", "Неизвестный автор"),
-            ("Забота о себе — это не эгоизм, а необходимость.", "Неизвестный автор"),
-            ("Иногда главное достижение дня — то, что ты прожил этот день.", "Неизвестный автор"),
-            ("Слушай своё тело: оно не враг, а партнёр в этой дороге.", "Неизвестный автор"),
-            ("Шаг за шагом, день за днём — так и строится новая жизнь.", "Неизвестный автор"),
-            ("Болезнь меняет многое, но она не забирает твою ценность как человека.", "Неизвестный автор"),
-            ("Важны не темпы, а направление движения.", "Неизвестный автор"),
-            ("Иногда самое смелое решение — попросить о помощи.", "Неизвестный автор"),
-            ("Твоё тело восстанавливается медленно, но уверенно — доверься процессу.", "Неизвестный автор"),
-            ("Даже если сегодня сил мало, это не отменяет твоей внутренней силы.", "Неизвестный автор"),
-            ("Каждый вдох — напоминание: ты всё ещё здесь и продолжаешь путь.", "Неизвестный автор"),
-            ("Пусть забота о здоровье станет проявлением любви к себе.", "Неизвестный автор"),
-            ("Бывают дни, когда достаточно просто быть. Этого уже много.", "Неизвестный автор"),
-            ("Даже если мир сузился до анализов и таблеток, за его пределами всё ещё есть жизнь.", "Неизвестный автор"),
-            ("Доверяй врачам, но не забывай слушать себя.", "Неизвестный автор"),
-            ("Каждый прожитый день с болезнью — это ещё один день твоей победы.", "Неизвестный автор"),
-            ("Твоё сердце бьётся — а значит, надежда жива.", "Неизвестный автор")
+            ("В слабости мы находим силу.", "Лев Толстой"),
+            ("Здоровье — это не всё, но без здоровья всё — ничто.", "Артур Шопенгауэр"),
+            ("Пока мы откладываем жизнь, она проходит.", "Сенека"),
+            ("Не то, что с нами происходит, а наша реакция на это имеет значение.", "Эпиктет"),
+            ("Терпение горько, но плод его сладок.", "Жан-Жак Руссо"),
+            ("Человек, у которого есть «зачем» жить, может вынести почти любое «как».", "Фридрих Ницше"),
+            ("Жизнь — это то, что происходит с тобой, пока ты строишь другие планы.", "Джон Леннон"),
+            ("Здоровье дороже богатства.", "Джордж Герберт"),
+            ("Сила не в том, чтобы не падать, а в том, чтобы подниматься после каждого падения.", "Конфуций"),
+            ("Жизнь — это 10% того, что с тобой происходит, и 90% — как ты на это реагируешь.", "Чарльз Свиндолл"),
+            ("У нас есть возможность выбирать отношение к тому, что нам дано.", "Виктор Франкл"),
+            ("Действие не всегда приносит счастье; но без действия нет счастья.", "Уинстон Черчилль"),
+            ("Счастье — не случайность, не подарок. Оно — результат внутренней работы.", "Далай-лама XIV"),
+            ("Время, которое мы имеем, — это время, которое мы выбираем.", "Марк Аврелий"),
+            ("Терпение — ключ к радости.", "Абу Хамид аль-Газали"),
+            ("Тот, кто знает, зачем жить, вынесет почти любое как.", "Виктор Франкл"),
+            ("Здоровье — величайшее из благ.", "Софокл"),
+            ("Не бойся медленного прогресса. Бойся стоять на месте.", "Брюс Ли"),
+            ("В каждом человеке есть солнце. Только дайте ему светить.", "Сократ"),
+            ("Смысл жизни в том, чтобы дать жизни смысл.", "Виктор Франкл"),
+            ("Трудности готовят обычных людей к необычной судьбе.", "Клайв Льюис"),
+            ("Жизнь измеряется не количеством вдохов, а моментами, что захватывают дух.", "Майя Энджелоу"),
+            ("Здоровье так же заразительно, как и болезнь.", "Ромен Роллан"),
+            ("Воля — это то, что заставляет тебя побеждать, когда твой разум говорит, что ты побеждён.", "Карлос Кастанеда"),
+            ("Страдание перестаёт быть страданием в тот момент, когда обретает смысл.", "Виктор Франкл"),
+            ("Человек способен изменить себя, и в этом его главная сила.", "Лев Толстой"),
+            ("Не тот велик, кто никогда не падал, а тот велик, кто падал и вставал.", "Конфуций"),
+            ("Здоровье — это то единственное, что по-настоящему нужно беречь.", "Антон Чехов"),
+            ("Душа исцеляется рядом с детьми.", "Фёдор Достоевский"),
+            ("Всё, что не убивает меня, делает меня сильнее.", "Фридрих Ницше"),
+            ("Жизнь — это десяти процентов то, что с тобой происходит, и девяноста процентов — как ты на это реагируешь.", "Чарльз Свиндолл"),
+            ("Спокойствие приносит здоровье.", "Талмуд"),
+            ("Терпение — основа всех добродетелей.", "Иоанн Златоуст"),
+            ("Только в темноте видно звёзды.", "Мартин Лютер Кинг"),
+            ("Здоровье души так же важно, как здоровье тела.", "Цицерон"),
+            ("Надежда — это сон бодрствующего.", "Аристотель"),
+            ("Сила в спокойствии.", "Лао-цзы"),
+            ("Жизнь прекрасна, если ею правильно пользоваться.", "Сенека"),
+            ("Смысл жизни в служении и в том, чтобы приносить пользу другим.", "Лев Толстой"),
+            ("Внутренняя свобода — это способность выбирать своё отношение к обстоятельствам.", "Виктор Франкл"),
+            ("Здоровье — главное сокровище.", "Публилий Сир"),
+            ("Терпение горько, но его плод сладок.", "Жан де Лабрюйер"),
+            ("Человек становится тем, о чём он думает.", "Марк Аврелий"),
+            ("Счастье приходит к тем, кто помогает другим.", "Альберт Швейцер"),
+            ("Дух укрепляется в испытаниях.", "Сенека"),
+            ("Жизнь даётся один раз, и хочется прожить её бодро.", "Антон Чехов"),
+            ("Вера в себя — первая ступень к успеху.", "Ральф Уолдо Эмерсон"),
+            ("Здоровье — это правильное соотношение духа и тела.", "Платон"),
+            ("Только тот достоин жизни и свободы, кто каждый день идёт за них на бой.", "Иоганн Вольфганг Гёте"),
+            ("Смысл жизни — в любви и в труде.", "Лев Толстой"),
+            ("Терпение — искусство надеяться.", "Вольтер"),
+            ("Сила не в мышцах, а в несгибаемой воле.", "Махатма Ганди"),
+            ("Жизнь — это череда выборов. Выбирай осознанно.", "Виктор Франкл"),
+            ("Здоровье духа важнее здоровья тела.", "Эпиктет"),
+            ("Надежда — лучший врач из всех, каких я знаю.", "Александр Дюма"),
+            ("Воля побеждает привычку.", "Марк Твен"),
+            ("Спокойствие — величайшее проявление силы.", "Брюс Ли"),
+            ("Жизнь коротка. Искусство вечно. Решение трудно.", "Гиппократ"),
+            ("Терпение — мать всех добродетелей.", "Св. Августин"),
+            ("Сила — в единстве тела и духа.", "Ювенал"),
+            ("Человек живёт, пока живёт его дух.", "Сенека"),
+            ("Надежда — якорь души.", "Еврипид"),
+            ("Воля к смыслу — главная движущая сила человека.", "Виктор Франкл"),
+            ("Жизнь — это не ожидание, что буря пройдёт; это умение танцевать под дождём.", "Вивиан Грин")
         ]
 
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
@@ -182,31 +220,113 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                greetingSection
-                    .padding(.vertical, 4)
-                metricsSection
-                    .padding(.vertical, 4)
-                medicationsTodaySection
-                    .padding(.vertical, 4)
-                doctorAppointmentSection
-                    .padding(.vertical, 4)
-                labTestSection
-                    .padding(.vertical, 4)
-                quoteSection
-                    .padding(.vertical, 4)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    greetingSection
+                        .padding(.vertical, 4)
+                    metricsSection
+                        .padding(.vertical, 4)
+                    medicationsTodaySection
+                        .padding(.vertical, 4)
+                    doctorAppointmentSection
+                        .padding(.vertical, 4)
+                    labTestSection
+                        .padding(.vertical, 4)
+                    quoteSection
+                        .padding(.vertical, 4)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 40)
+            .background(Color(.systemGroupedBackground))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Настройки")
+                }
+            }
         }
-        .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $isShowingDoctorDateSheet) {
             doctorAppointmentDateSheet
         }
         .sheet(isPresented: $isShowingLabTestDateSheet) {
             labTestDateSheet
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            if let profile = currentProfile {
+                SettingsView(profile: profile, onDismiss: { isShowingSettings = false })
+            }
+        }
+        .onAppear {
+            refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+                currentTime = Date()
+            }
+            NotificationManager.shared.printScheduledNotifications()
+        }
+        .onDisappear {
+            refreshTimer?.invalidate()
+            refreshTimer = nil
+        }
+    }
+
+    // MARK: - Статус события (приём / анализы)
+
+    private enum EventStatus: Equatable {
+        case passed
+        case today
+        case tomorrow
+        case upcoming(days: Int)
+    }
+
+    private func eventStatus(for date: Date) -> EventStatus {
+        let now = currentTime
+        let oneHourAfter = date.addingTimeInterval(3600)
+
+        if now > oneHourAfter {
+            return .passed
+        }
+
+        let cal = Calendar.current
+        let diffDays = cal.dateComponents(
+            [.day],
+            from: cal.startOfDay(for: now),
+            to: cal.startOfDay(for: date)
+        ).day ?? 0
+
+        if diffDays == 0 {
+            return .today
+        } else if diffDays == 1 {
+            return .tomorrow
+        } else {
+            return .upcoming(days: diffDays)
+        }
+    }
+
+    @ViewBuilder
+    private func eventSubtitleView(_ status: EventStatus) -> some View {
+        switch status {
+        case .passed:
+            EmptyView()
+        case .today:
+            Text("Сегодня!")
+                .font(.footnote)
+                .fontWeight(.semibold)
+                .foregroundStyle(.red)
+        case .tomorrow:
+            Text("Завтра!")
+                .font(.footnote)
+                .fontWeight(.semibold)
+                .foregroundStyle(.yellow)
+        case .upcoming(let days):
+            Text("Через \(days) \(days == 1 ? "день" : days < 5 ? "дня" : "дней")")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -304,8 +424,8 @@ struct HomeView: View {
     private var doctorAppointmentSection: some View {
         let appointment = currentProfile?.nextDoctorAppointment
         let doctorName = currentProfile?.nextDoctorName?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let appointmentStart = appointment.map { calendar.startOfDay(for: $0) }
-        let isPast = appointmentStart.map { $0 < todayStart } ?? true
+        let status = appointment.map { eventStatus(for: $0) }
+        let isPassed = status == .some(.passed)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -337,7 +457,7 @@ struct HomeView: View {
                     .buttonStyle(.borderedProminent)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-            } else if isPast {
+            } else if isPassed {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Приём прошёл")
                         .font(.subheadline)
@@ -360,9 +480,6 @@ struct HomeView: View {
                     Text("🏥")
                         .font(.title2)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Приём у нефролога")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
                         if let name = doctorName, !name.isEmpty {
                             Text("👨‍⚕️ \(name)")
                                 .font(.subheadline)
@@ -373,7 +490,9 @@ struct HomeView: View {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
-                        doctorAppointmentSubtitle(appointmentStart: appointmentStart!)
+                        if let s = status {
+                            eventSubtitleView(s)
+                        }
                     }
                     Spacer()
                     Button {
@@ -390,34 +509,13 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .background(appointment != nil && isPast ? Color(.tertiarySystemBackground) : Color(.secondarySystemBackground))
+        .background(appointment != nil && isPassed ? Color(.tertiarySystemBackground) : Color(.secondarySystemBackground))
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
-    }
-
-    @ViewBuilder
-    private func doctorAppointmentSubtitle(appointmentStart: Date) -> some View {
-        let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart
-        if appointmentStart == todayStart {
-            Text("Сегодня!")
-                .font(.footnote)
-                .fontWeight(.semibold)
-                .foregroundStyle(.red)
-        } else if appointmentStart == tomorrowStart {
-            Text("Завтра!")
-                .font(.footnote)
-                .fontWeight(.semibold)
-                .foregroundStyle(.yellow)
-        } else {
-            let days = (calendar.dateComponents([.day], from: todayStart, to: appointmentStart).day ?? 0)
-            Text("Через \(days) \(days == 1 ? "день" : days < 5 ? "дня" : "дней")")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
     }
 
     private var doctorAppointmentDateSheet: some View {
@@ -474,8 +572,8 @@ struct HomeView: View {
 
     private var labTestSection: some View {
         let labDate = currentProfile?.nextLabTest
-        let labStart = labDate.map { calendar.startOfDay(for: $0) }
-        let isPast = labStart.map { $0 < todayStart } ?? true
+        let status = labDate.map { eventStatus(for: $0) }
+        let isPassed = status == .some(.passed)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -499,7 +597,7 @@ struct HomeView: View {
                     .buttonStyle(.borderedProminent)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-            } else if isPast {
+            } else if isPassed {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Дата прошла")
                         .font(.subheadline)
@@ -529,8 +627,8 @@ struct HomeView: View {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
-                        if let start = labStart {
-                            doctorAppointmentSubtitle(appointmentStart: start)
+                        if let s = status {
+                            eventSubtitleView(s)
                         }
                     }
                     Spacer()
@@ -547,7 +645,7 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .background(labDate != nil && isPast ? Color(.tertiarySystemBackground) : Color(.secondarySystemBackground))
+        .background(labDate != nil && isPassed ? Color(.tertiarySystemBackground) : Color(.secondarySystemBackground))
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
@@ -707,10 +805,12 @@ struct HomeView: View {
                         .font(.body.italic())
                         .foregroundStyle(.primary)
 
-                    Text("— \(quote.author)")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 4)
+                    if !quote.author.isEmpty {
+                        Text("— \(quote.author)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                    }
                 }
                 .padding(16)
             }

@@ -25,6 +25,19 @@ final class Medication {
     @Relationship(deleteRule: .cascade, inverse: \MedicationIntake.medication)
     var intakes: [MedicationIntake] = []
 
+    /// Отформатированная дозировка без лишних нулей: "2.0 мг" → "2 мг", "2.5 мг" → "2.5 мг"
+    var formattedDosage: String {
+        guard let amount = dosageAmount else {
+            let unit = dosageUnit.trimmingCharacters(in: .whitespaces)
+            return unit.isEmpty ? "" : unit
+        }
+        let unit = dosageUnit.trimmingCharacters(in: .whitespaces)
+        let amountStr = amount.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(amount))"
+            : "\(amount)"
+        return unit.isEmpty ? amountStr : "\(amountStr) \(unit)"
+    }
+
     init(
         name: String,
         dosageAmount: Double? = nil,

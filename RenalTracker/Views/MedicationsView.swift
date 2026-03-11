@@ -68,6 +68,54 @@ struct MedicationsView: View {
         medications.filter { $0.isActive && $0.daysOfWeek.contains(todayWeekday) }
     }
 
+    private var totalCount: Int { todaysMedications.count }
+
+    private var takenCount: Int {
+        todaysMedications.filter { intakeForToday(medication: $0)?.isTaken == true }.count
+    }
+
+    private var todayProgressCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Принято сегодня")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(takenCount) из \(totalCount)")
+                    .font(.subheadline.bold())
+            }
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 8)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(totalCount > 0 && takenCount == totalCount ? Color.green : Color.blue)
+                        .frame(
+                            width: totalCount > 0
+                                ? geometry.size.width * CGFloat(takenCount) / CGFloat(totalCount)
+                                : 0,
+                            height: 8
+                        )
+                        .animation(.easeInOut, value: takenCount)
+                }
+            }
+            .frame(height: 8)
+
+            if totalCount > 0 && takenCount == totalCount {
+                Text("Все лекарства приняты ✓")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 4)
+    }
+
     /// Группы лекарств по времени приёма (от раннего к позднему)
     private var todayScheduleGroups: [(time: Date, medications: [Medication])] {
         let grouped = Dictionary(grouping: todaysMedications) { med -> Date in
@@ -107,6 +155,13 @@ struct MedicationsView: View {
                     .padding()
                 } else {
                     List {
+                        if !todaysMedications.isEmpty {
+                            Section {
+                                todayProgressCard
+                                    .listRowInsets(EdgeInsets())
+                                    .listRowBackground(Color.clear)
+                            }
+                        }
                         if todayScheduleGroups.isEmpty {
                             Section {
                                 Text("На сегодня приёмов не запланировано.")
@@ -236,6 +291,12 @@ struct MedicationsView: View {
                 medicationToDelete = nil
             }
         }
+        .onAppear {
+            NotificationManager.shared.rescheduleMedicationNotifications(for: medications)
+        }
+        .onChange(of: medications) { _, newMeds in
+            NotificationManager.shared.rescheduleMedicationNotifications(for: newMeds)
+        }
     }
 
     private func intakeForToday(medication: Medication) -> MedicationIntake? {
@@ -356,17 +417,8 @@ struct MedicationsView: View {
             let timeFormatter = DateFormatter.russianTime
 
             func dosageString(for med: Medication) -> String {
-                if let amount = med.dosageAmount {
-                    let unit = med.dosageUnit.trimmingCharacters(in: .whitespaces)
-                    if unit.isEmpty {
-                        return String(format: "%.1f", amount)
-                    } else {
-                        return String(format: "%.1f %@", amount, unit)
-                    }
-                } else {
-                    let unit = med.dosageUnit.trimmingCharacters(in: .whitespaces)
-                    return unit.isEmpty ? "—" : unit
-                }
+                let formatted = med.formattedDosage
+                return formatted.isEmpty ? "—" : formatted
             }
 
             for (_, med) in meds.enumerated() {
@@ -479,15 +531,8 @@ private struct MedicationRow: View {
     }
 
     private var dosageString: String {
-        if let amount = medication.dosageAmount {
-            if medication.dosageUnit.isEmpty {
-                return String(format: "%.1f", amount)
-            } else {
-                return String(format: "%.1f %@", amount, medication.dosageUnit)
-            }
-        } else {
-            return medication.dosageUnit.isEmpty ? "Дозировка не указана" : medication.dosageUnit
-        }
+        let formatted = medication.formattedDosage
+        return formatted.isEmpty ? "Дозировка не указана" : formatted
     }
 
     var body: some View {
@@ -551,7 +596,7 @@ private struct AddMedicationSheet: View {
                         TextField("Количество", text: $dosageAmountText)
                             .keyboardType(.decimalPad)
                             .autocorrectionDisabled()
-                        TextField("Ед. изм. (например, мг)", text: $dosageUnit)
+                        TextField("Ед. изм. (мг, МЕ...)", text: $dosageUnit)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                     }
@@ -612,6 +657,7 @@ private struct AddMedicationSheet: View {
                 }
             }
             .navigationTitle("Новое лекарство")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }
@@ -702,7 +748,7 @@ private struct EditMedicationSheet: View {
                         TextField("Количество", text: $dosageAmountText)
                             .keyboardType(.decimalPad)
                             .autocorrectionDisabled()
-                        TextField("Ед. изм. (например, мг)", text: $medication.dosageUnit)
+                        TextField("Ед. изм. (мг, МЕ...)", text: $medication.dosageUnit)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                     }
@@ -763,6 +809,7 @@ private struct EditMedicationSheet: View {
                 }
             }
             .navigationTitle("Редактирование лекарства")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }

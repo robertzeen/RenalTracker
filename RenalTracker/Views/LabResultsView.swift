@@ -43,92 +43,447 @@ enum LabTestCatalog {
 struct LabResultsView: View {
     @Environment(\.modelContext) private var modelContext
 
+    @Query private var profiles: [UserProfile]
     @Query(sort: \TrackedLabTest.createdAt, order: .forward)
     private var trackedTests: [TrackedLabTest]
 
     @State private var isShowingAddTrackedTest = false
     @State private var selectedTestForDetails: TrackedLabTest?
+    @State private var pendingNavigationToTest: TrackedLabTest?
     @State private var testToDelete: TrackedLabTest?
 
-    var body: some View {
-        NavigationStack {
-            Group {
-                if trackedTests.isEmpty {
-                    VStack(spacing: 24) {
-                        VStack(spacing: 8) {
-                            Text("Анализы")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                            Text("Добавьте первый отслеживаемый анализ, чтобы видеть результаты и динамику по нему.")
-                                .font(.subheadline)
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(.secondary)
-                        }
+    @State private var isShowingExportDialog = false
+    @State private var isShowingExportTestDialog = false
+    @State private var isShowingExportPeriodDialog = false
+    @State private var testForExport: TrackedLabTest?
 
-                        Button("Добавить отслеживаемый анализ") {
-                            isShowingAddTrackedTest = true
-                        }
-                        .buttonStyle(.borderedProminent)
+    @State private var isGeneratingPDF = false
+    private var calendar: Calendar { Calendar.current }
+
+    private var patientDisplayName: String {
+        guard let profile = profiles.first else { return "не указан" }
+        let name = profile.name.trimmingCharacters(in: .whitespaces)
+        let last = profile.lastName?.trimmingCharacters(in: .whitespaces) ?? ""
+        if !name.isEmpty && !last.isEmpty {
+            return "\(name) \(last)"
+        } else if !name.isEmpty {
+            return name
+        } else if !last.isEmpty {
+            return last
+        } else {
+            return "не указан"
+        }
+    }
+
+    private enum LabExportPeriod {
+        case days7, days30, all
+    }
+
+    // MARK: - Экспорт: реализация
+
+    @MainActor
+    private func exportAllLabsPDF() async {
+        isGeneratingPDF = true
+        defer { isGeneratingPDF = false }
+
+        let testsWithResults = trackedTests.filter { !$0.results.isEmpty }
+        guard !testsWithResults.isEmpty else { return }
+
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842) // A4 @72 dpi
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+
+        let data = renderer.pdfData { context in
+            context.beginPage()
+
+            let margin: CGFloat = 32
+            var y: CGFloat = margin
+
+            let title = "Результаты анализов"
+            let subtitle = "Пациент: \(patientDisplayName)\nСформировано: \(DateFormatter.russianDateTime.string(from: Date()))"
+
+            let titleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 20, weight: .bold)
+            ]
+            let subtitleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12)
+            ]
+
+            (title as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
+            y += 28
+            (subtitle as NSString).draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 50), withAttributes: subtitleAttributes)
+            y += 56
+
+            let headerFont = UIFont.systemFont(ofSize: 13, weight: .semibold)
+            let headerAttributes: [NSAttributedString.Key: Any] = [.font: headerFont]
+            let rowFont = UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+            let rowAttributes: [NSAttributedString.Key: Any] = [.font: rowFont]
+
+            let contentWidth = pageRect.width - 2 * margin
+            let dateWidth = contentWidth * 0.4
+            let valueWidth = contentWidth * 0.6
+            let rowHeight: CGFloat = 16
+
+            let dateFormatter = DateFormatter.russianDate
+
+            for test in testsWithResults {
+                let results = test.results.sorted { $0.date > $1.date }
+                guard !results.isEmpty else { continue }
+
+                // Перенос на новую страницу при нехватке места
+                if y > pageRect.height - margin - 120 {
+                    context.beginPage()
+                    y = margin
+                }
+
+                // Название анализа
+                (test.name as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: headerAttributes)
+                y += rowHeight + 4
+
+                // Заголовок таблицы (Дата | Значение)
+                let dateHeaderRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
+                let valueHeaderRect = CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight)
+
+                ("Дата" as NSString).draw(in: dateHeaderRect, withAttributes: headerAttributes)
+                ("Значение" as NSString).draw(in: valueHeaderRect, withAttributes: headerAttributes)
+
+                y += rowHeight + 2
+
+                for (_, result) in results.enumerated() {
+                    if y > pageRect.height - margin - 80 {
+                        context.beginPage()
+                        y = margin
                     }
-                    .padding()
-                } else {
-                    List {
-                        Section {
-                            ForEach(trackedTests) { test in
-                                Button {
-                                    selectedTestForDetails = test
-                                } label: {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(test.name)
-                                                .font(.headline)
-                                            if let last = test.results.sorted(by: { $0.date > $1.date }).first {
-                                                Text("\(String(format: "%.2f", last.value)) \(test.unit)")
-                                                    .font(.subheadline)
-                                                Text(DateFormatter.russianDateTime.string(from: last.date))
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            } else {
-                                                Text("Нет данных")
-                                                    .font(.subheadline)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                        Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        testToDelete = test
-                                    } label: {
-                                        Label("Удалить", systemImage: "trash")
-                                    }
-                                }
+
+                    _ = CGRect(x: margin, y: y, width: contentWidth, height: rowHeight)
+
+                    let dateString = dateFormatter.string(from: result.date)
+                    let valueWithUnit = result.unit.isEmpty
+                        ? String(format: "%.2f", result.value)
+                        : String(format: "%.2f %@", result.value, result.unit)
+
+                    let dateRect = CGRect(x: margin + 2, y: y, width: dateWidth - 4, height: rowHeight)
+                    let valueRect = CGRect(x: margin + dateWidth + 2, y: y, width: valueWidth - 4, height: rowHeight)
+
+                    (dateString as NSString).draw(in: dateRect, withAttributes: rowAttributes)
+                    (valueWithUnit as NSString).draw(in: valueRect, withAttributes: rowAttributes)
+
+                    y += rowHeight
+                }
+
+                y += rowHeight // отступ между анализами
+            }
+
+            // Футер
+            let footerText = "Сформировано приложением RenalTracker"
+            let footerAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 9),
+                .foregroundColor: UIColor.secondaryLabel
+            ]
+            let footerY = max(y + 24, pageRect.height - margin - 20)
+            (footerText as NSString).draw(at: CGPoint(x: margin, y: footerY), withAttributes: footerAttributes)
+        }
+
+        _ = PDFDocument(data: data)
+
+        let fileFormatter = DateFormatter()
+        fileFormatter.locale = Locale(identifier: "ru_RU")
+        fileFormatter.dateFormat = "yyyy-MM-dd"
+        let datePart = fileFormatter.string(from: Date())
+        let fileName = "LabResults-\(datePart).pdf"
+
+        guard let fileURL = saveToTemp(data: data, fileName: fileName) else { return }
+        presentActivityController(for: fileURL)
+    }
+
+    @MainActor
+    private func exportSingleLabPDF(test: TrackedLabTest, period: LabExportPeriod) async {
+        isGeneratingPDF = true
+        defer { isGeneratingPDF = false }
+
+        let allResults = test.results
+        guard !allResults.isEmpty else { return }
+
+        let now = Date()
+        let filtered: [LabResult]
+        switch period {
+        case .days7:
+            let from = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+            filtered = allResults.filter { $0.date >= from }
+        case .days30:
+            let from = calendar.date(byAdding: .day, value: -30, to: now) ?? now
+            filtered = allResults.filter { $0.date >= from }
+        case .all:
+            filtered = allResults
+        }
+
+        let results = filtered.sorted { $0.date < $1.date }
+        guard !results.isEmpty else { return }
+
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842) // A4 @72 dpi
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+
+        let data = renderer.pdfData { context in
+            context.beginPage()
+
+            let margin: CGFloat = 32
+            var y: CGFloat = margin
+
+            // Заголовок
+            let title = "Динамика по анализу: \(test.name)"
+            let subtitle = "Пациент: \(patientDisplayName)\nЕдиница измерения: \(test.unit)\nСформировано: \(DateFormatter.russianDateTime.string(from: Date()))"
+
+            let titleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 20, weight: .bold)
+            ]
+            let subtitleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12)
+            ]
+
+            (title as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
+            y += 28
+            (subtitle as NSString).draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 60), withAttributes: subtitleAttributes)
+            y += 60
+
+            // График (если есть минимум 2 точки)
+            if results.count >= 2 {
+                let chartView = PDFLabChartView(test: test, results: results)
+                    .padding(16)
+                    .clipped()
+                let chartRenderer = ImageRenderer(content: chartView)
+                chartRenderer.proposedSize = ProposedViewSize(width: 480, height: 180)
+                if let chartImage = chartRenderer.uiImage {
+                    let chartHeight: CGFloat = 160
+                    let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
+                    chartImage.draw(in: chartRect)
+                    y += chartHeight + 16
+                }
+            }
+
+            // Таблица значений
+            let contentWidth = pageRect.width - 2 * margin
+            let dateWidth = contentWidth * 0.4
+            let valueWidth = contentWidth * 0.6
+            let rowHeight: CGFloat = 16
+
+            let headerFont = UIFont.systemFont(ofSize: 12, weight: .semibold)
+            let headerAttributes: [NSAttributedString.Key: Any] = [.font: headerFont]
+            let rowFont = UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+            let rowAttributes: [NSAttributedString.Key: Any] = [.font: rowFont]
+
+            let dateHeaderRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
+            let valueHeaderRect = CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight)
+
+            ("Дата" as NSString).draw(in: dateHeaderRect, withAttributes: headerAttributes)
+            ("Значение" as NSString).draw(in: valueHeaderRect, withAttributes: headerAttributes)
+
+            y += rowHeight + 2
+
+            let dateFormatter = DateFormatter.russianDate
+
+            for result in results.sorted(by: { $0.date > $1.date }) {
+                if y > pageRect.height - margin - 80 {
+                    context.beginPage()
+                    y = margin
+                }
+
+                let dateString = dateFormatter.string(from: result.date)
+                let valueWithUnit = test.unit.isEmpty
+                    ? String(format: "%.2f", result.value)
+                    : String(format: "%.2f %@", result.value, test.unit)
+
+                let dateRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
+                let valueRect = CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight)
+
+                (dateString as NSString).draw(in: dateRect, withAttributes: rowAttributes)
+                (valueWithUnit as NSString).draw(in: valueRect, withAttributes: rowAttributes)
+
+                y += rowHeight
+            }
+
+            // Статистика
+            let values = results.map { $0.value }
+            if let minVal = values.min(), let maxVal = values.max() {
+                let avg = values.reduce(0, +) / Double(values.count)
+
+                y += 18
+                ("Итоги за период:" as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
+                y += 20
+
+                let statLines = [
+                    String(format: "Минимум: %.2f %@", minVal, test.unit),
+                    String(format: "Максимум: %.2f %@", maxVal, test.unit),
+                    String(format: "Среднее: %.2f %@", avg, test.unit)
+                ]
+
+                for line in statLines {
+                    (line as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: subtitleAttributes)
+                    y += 16
+                }
+            }
+        }
+
+        _ = PDFDocument(data: data)
+
+        let fileFormatter = DateFormatter()
+        fileFormatter.locale = Locale(identifier: "ru_RU")
+        fileFormatter.dateFormat = "yyyy-MM-dd"
+        let datePart = fileFormatter.string(from: Date())
+
+        let safeName = test.name
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "/", with: "_")
+
+        let fileName = "LabResult-\(safeName)-\(datePart).pdf"
+
+        guard let fileURL = saveToTemp(data: data, fileName: fileName) else { return }
+        presentActivityController(for: fileURL)
+    }
+
+    // MARK: - Вспомогательные функции для файлов / шаринга
+
+    private func saveToTemp(data: Data, fileName: String) -> URL? {
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent(fileName)
+        do {
+            try data.write(to: fileURL, options: .atomic)
+            return fileURL
+        } catch {
+            return nil
+        }
+    }
+
+    @MainActor
+    private func presentActivityController(for url: URL) {
+        guard
+            let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+            let window = scene.windows.first(where: { $0.isKeyWindow }),
+            let root = window.rootViewController
+        else { return }
+
+        let av = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        root.present(av, animated: true)
+    }
+
+    var body: some View {
+        ZStack {
+            NavigationStack {
+                Group {
+                    if trackedTests.isEmpty {
+                        VStack(spacing: 24) {
+                            VStack(spacing: 8) {
+                                Text("Анализы")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                Text("Добавьте первый отслеживаемый анализ, чтобы видеть результаты и динамику по нему.")
+                                    .font(.subheadline)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(.secondary)
                             }
-                        } header: {
-                            HStack {
-                                Text("Отслеживаемые анализы")
-                                Spacer()
-                                Button {
-                                    isShowingAddTrackedTest = true
-                                } label: {
-                                    Image(systemName: "plus.circle.fill")
-                                        .imageScale(.large)
+
+                            Button("Добавить отслеживаемый анализ") {
+                                isShowingAddTrackedTest = true
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding()
+                    } else {
+                        List {
+                            Section {
+                                ForEach(trackedTests) { test in
+                                    Button {
+                                        selectedTestForDetails = test
+                                    } label: {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(test.name)
+                                                    .font(.headline)
+                                                if let last = test.results.sorted(by: { $0.date > $1.date }).first {
+                                                    Text("\(String(format: "%.2f", last.value)) \(test.unit)")
+                                                        .font(.subheadline)
+                                                    Text(DateFormatter.russianDateTime.string(from: last.date))
+                                                        .font(.caption)
+                                                        .foregroundStyle(.secondary)
+                                                } else {
+                                                    Text("Нет данных")
+                                                        .font(.subheadline)
+                                                        .foregroundStyle(.secondary)
+                                                }
+                                            }
+                                            Spacer()
+                                            Image(systemName: "chevron.right")
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                        .padding(.vertical, 4)
+                                    }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            testToDelete = test
+                                        } label: {
+                                            Label("Удалить", systemImage: "trash")
+                                        }
+                                    }
                                 }
-                                .accessibilityLabel("Добавить отслеживаемый анализ")
+                            } header: {
+                                HStack {
+                                    Text("Отслеживаемые анализы")
+                                    Spacer()
+                                    Button {
+                                        isShowingAddTrackedTest = true
+                                    } label: {
+                                        Image(systemName: "plus.circle.fill")
+                                            .imageScale(.large)
+                                    }
+                                    .accessibilityLabel("Добавить отслеживаемый анализ")
+                                }
                             }
                         }
                     }
                 }
+                .navigationTitle("Анализы")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        if !trackedTests.isEmpty {
+                            Button {
+                                isShowingExportDialog = true
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                            .accessibilityLabel("Экспорт анализов")
+                        }
+                    }
+                }
             }
-            .navigationTitle("Анализы")
+
+            if isGeneratingPDF {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Формируем PDF...")
+                            .foregroundStyle(.white)
+                    }
+                    .padding(24)
+                    .background(Color(.systemGray2).opacity(0.9))
+                    .cornerRadius(16)
+                }
+            }
         }
-        .sheet(isPresented: $isShowingAddTrackedTest) {
-            AddTrackedLabTestSheet()
-                .presentationDetents([.medium, .large])
+        .sheet(isPresented: $isShowingAddTrackedTest, onDismiss: {
+            if let test = pendingNavigationToTest {
+                pendingNavigationToTest = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    selectedTestForDetails = test
+                }
+            }
+        }) {
+            AddTrackedLabTestSheet { existing in
+                pendingNavigationToTest = existing
+            }
+            .presentationDetents([.medium, .large])
         }
         .sheet(item: $selectedTestForDetails) { test in
             LabTestDetailView(test: test)
@@ -150,6 +505,61 @@ struct LabResultsView: View {
                 testToDelete = nil
             }
         }
+        .confirmationDialog(
+            "Экспорт анализов",
+            isPresented: $isShowingExportDialog,
+            titleVisibility: .visible
+        ) {
+            Button("Экспорт всех анализов") {
+                Task {
+                    await exportAllLabsPDF()
+                }
+            }
+            if !trackedTests.isEmpty {
+                Button("Экспорт по анализу...") {
+                    isShowingExportTestDialog = true
+                }
+            }
+            Button("Отмена", role: .cancel) { }
+        }
+        .confirmationDialog(
+            "Выберите анализ",
+            isPresented: $isShowingExportTestDialog,
+            titleVisibility: .visible
+        ) {
+            ForEach(trackedTests) { test in
+                Button(test.name) {
+                    testForExport = test
+                    isShowingExportPeriodDialog = true
+                }
+            }
+            Button("Отмена", role: .cancel) { }
+        }
+        .confirmationDialog(
+            "Период",
+            isPresented: $isShowingExportPeriodDialog,
+            titleVisibility: .visible
+        ) {
+            Button("7 дней") {
+                guard let test = testForExport else { return }
+                Task {
+                    await exportSingleLabPDF(test: test, period: .days7)
+                }
+            }
+            Button("30 дней") {
+                guard let test = testForExport else { return }
+                Task {
+                    await exportSingleLabPDF(test: test, period: .days30)
+                }
+            }
+            Button("Все данные") {
+                guard let test = testForExport else { return }
+                Task {
+                    await exportSingleLabPDF(test: test, period: .all)
+                }
+            }
+            Button("Отмена", role: .cancel) { }
+        }
     }
 }
 
@@ -159,55 +569,115 @@ private struct AddTrackedLabTestSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    @Query private var existingTests: [TrackedLabTest]
+
+    var onNavigateToExisting: (TrackedLabTest) -> Void
+
+    @State private var useCustomName: Bool = false
     @State private var selectedDefinition: LabTestDefinition?
     @State private var customName: String = ""
     @State private var customUnit: String = ""
     @State private var customReferenceMin: String = ""
     @State private var customReferenceMax: String = ""
 
+    @State private var duplicateTest: TrackedLabTest?
+    @State private var showDuplicateAlert = false
+
     var body: some View {
         NavigationStack {
             Form {
-                Section("Выбор из списка") {
-                    Picker("Анализ", selection: $selectedDefinition) {
-                        Text("Не выбран").tag(Optional<LabTestDefinition>.none)
-                        ForEach(LabTestCatalog.predefined) { def in
-                            Text(def.name).tag(Optional(def))
+                Section {
+                    Picker("Режим", selection: $useCustomName) {
+                        Text("Выбрать из списка").tag(false)
+                        Text("Свой анализ").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: useCustomName) { _, isCustom in
+                        if isCustom {
+                            selectedDefinition = nil
+                        } else {
+                            customName = ""
+                            customUnit = ""
+                            customReferenceMin = ""
+                            customReferenceMax = ""
                         }
                     }
                 }
 
-                Section("Произвольный анализ") {
-                    TextField("Название анализа", text: $customName)
-                    TextField("Единица измерения", text: $customUnit)
-                        .textInputAutocapitalization(.never)
-                    TextField("Нижняя граница (необязательно)", text: $customReferenceMin)
-                        .keyboardType(.decimalPad)
-                    TextField("Верхняя граница (необязательно)", text: $customReferenceMax)
-                        .keyboardType(.decimalPad)
+                if !useCustomName {
+                    Section("Стандартные анализы") {
+                        Picker("Анализ", selection: $selectedDefinition) {
+                            Text("Не выбран").tag(Optional<LabTestDefinition>.none)
+                            ForEach(LabTestCatalog.predefined) { def in
+                                Text(def.name).tag(Optional(def))
+                            }
+                        }
+                    }
+                } else {
+                    Section("Свой анализ") {
+                        TextField("Название анализа", text: $customName)
+                        TextField("Единица измерения", text: $customUnit)
+                            .textInputAutocapitalization(.never)
+                        TextField("Нижняя граница (необязательно)", text: $customReferenceMin)
+                            .keyboardType(.decimalPad)
+                        TextField("Верхняя граница (необязательно)", text: $customReferenceMax)
+                            .keyboardType(.decimalPad)
+                    }
                 }
             }
             .navigationTitle("Новый анализ")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Сохранить") {
-                        save()
+                        attemptSave()
                     }
                     .disabled(!canSave)
                 }
+            }
+            .alert("Анализ уже существует", isPresented: $showDuplicateAlert, presenting: duplicateTest) { existing in
+                Button("Перейти к анализу") {
+                    dismiss()
+                    onNavigateToExisting(existing)
+                }
+                Button("Отмена", role: .cancel) { }
+            } message: { existing in
+                Text("«\(existing.name)» уже добавлен в список отслеживаемых анализов. Вы можете добавить новый результат в существующий анализ.")
             }
         }
     }
 
     private var canSave: Bool {
-        selectedDefinition != nil || !customName.trimmingCharacters(in: .whitespaces).isEmpty
+        if useCustomName {
+            return !customName.trimmingCharacters(in: .whitespaces).isEmpty
+        } else {
+            return selectedDefinition != nil
+        }
+    }
+
+    private func pendingName() -> String {
+        if useCustomName {
+            return customName.trimmingCharacters(in: .whitespaces)
+        } else {
+            return selectedDefinition?.name ?? ""
+        }
+    }
+
+    private func attemptSave() {
+        let name = pendingName()
+        if let existing = existingTests.first(where: { $0.name.lowercased() == name.lowercased() }) {
+            duplicateTest = existing
+            showDuplicateAlert = true
+            return
+        }
+        save()
     }
 
     private func save() {
-        if let def = selectedDefinition {
+        if let def = selectedDefinition, !useCustomName {
             let test = TrackedLabTest(
                 name: def.name,
                 unit: def.unit,
@@ -486,9 +956,8 @@ private struct LabTestDetailView: View, Identifiable {
 
             // Таблица значений
             let contentWidth = pageRect.width - 2 * margin
-            let dateWidth = contentWidth * 0.35
-            let timeWidth = contentWidth * 0.25
-            let valueWidth = contentWidth * 0.4
+            let dateWidth = contentWidth * 0.4
+            let valueWidth = contentWidth * 0.6
             let rowHeight: CGFloat = 16
 
             let headerFont = UIFont.systemFont(ofSize: 12, weight: .semibold)
@@ -497,17 +966,14 @@ private struct LabTestDetailView: View, Identifiable {
             let rowAttributes: [NSAttributedString.Key: Any] = [.font: rowFont]
 
             let dateHeaderRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
-            let timeHeaderRect = CGRect(x: margin + dateWidth, y: y, width: timeWidth, height: rowHeight)
-            let valueHeaderRect = CGRect(x: margin + dateWidth + timeWidth, y: y, width: valueWidth, height: rowHeight)
+            let valueHeaderRect = CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight)
 
             ("Дата" as NSString).draw(in: dateHeaderRect, withAttributes: headerAttributes)
-            ("Время" as NSString).draw(in: timeHeaderRect, withAttributes: headerAttributes)
             ("Значение" as NSString).draw(in: valueHeaderRect, withAttributes: headerAttributes)
 
             y += rowHeight + 2
 
             let dateFormatter = DateFormatter.russianDate
-            let timeFormatter = DateFormatter.russianTime
 
             for result in results.sorted(by: { $0.date > $1.date }) {
                 if y > pageRect.height - margin - 80 {
@@ -516,16 +982,15 @@ private struct LabTestDetailView: View, Identifiable {
                 }
 
                 let dateString = dateFormatter.string(from: result.date)
-                let timeString = timeFormatter.string(from: result.date)
-                let valueString = String(format: "%.2f %@", result.value, test.unit)
+                let valueWithUnit = test.unit.isEmpty
+                    ? String(format: "%.2f", result.value)
+                    : String(format: "%.2f %@", result.value, test.unit)
 
                 let dateRect = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
-                let timeRect = CGRect(x: margin + dateWidth, y: y, width: timeWidth, height: rowHeight)
-                let valueRect = CGRect(x: margin + dateWidth + timeWidth, y: y, width: valueWidth, height: rowHeight)
+                let valueRect = CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight)
 
                 (dateString as NSString).draw(in: dateRect, withAttributes: rowAttributes)
-                (timeString as NSString).draw(in: timeRect, withAttributes: rowAttributes)
-                (valueString as NSString).draw(in: valueRect, withAttributes: rowAttributes)
+                (valueWithUnit as NSString).draw(in: valueRect, withAttributes: rowAttributes)
 
                 y += rowHeight
             }
