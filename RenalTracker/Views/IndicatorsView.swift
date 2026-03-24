@@ -413,6 +413,8 @@ struct BloodPressureListView: View {
     private var records: [BloodPressure]
 
     @State private var recordToEdit: BloodPressure?
+    @State private var recordToDelete: BloodPressure?
+    @State private var showDeleteConfirmation = false
     @State private var showExportDialog = false
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
@@ -465,12 +467,12 @@ struct BloodPressureListView: View {
                         Section {
                             ForEach(group.records) { record in
                                 bpRow(record)
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
-                                            modelContext.delete(record)
-                                            try? modelContext.save()
+                                            recordToDelete = record
+                                            showDeleteConfirmation = true
                                         } label: {
-                                            Image(systemName: "trash")
+                                            Label("Удалить", systemImage: "trash")
                                         }
                                     }
                             }
@@ -534,6 +536,18 @@ struct BloodPressureListView: View {
             if let url = pdfURL {
                 ShareSheet(activityItems: [url])
             }
+        }
+        .alert("Удалить измерение?", isPresented: $showDeleteConfirmation) {
+            Button("Удалить", role: .destructive) {
+                if let r = recordToDelete {
+                    modelContext.delete(r)
+                    try? modelContext.save()
+                }
+                recordToDelete = nil
+            }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            Text("Это действие нельзя отменить.")
         }
     }
 
@@ -729,6 +743,8 @@ struct WeightListView: View {
     private var records: [Weight]
 
     @State private var recordToEdit: Weight?
+    @State private var recordToDelete: Weight?
+    @State private var showDeleteConfirmation = false
     @State private var showExportDialog = false
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
@@ -769,12 +785,12 @@ struct WeightListView: View {
                         Section {
                             ForEach(group.records) { record in
                                 weightRow(record)
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
-                                            modelContext.delete(record)
-                                            try? modelContext.save()
+                                            recordToDelete = record
+                                            showDeleteConfirmation = true
                                         } label: {
-                                            Image(systemName: "trash")
+                                            Label("Удалить", systemImage: "trash")
                                         }
                                     }
                             }
@@ -832,6 +848,18 @@ struct WeightListView: View {
             if let url = pdfURL {
                 ShareSheet(activityItems: [url])
             }
+        }
+        .alert("Удалить измерение?", isPresented: $showDeleteConfirmation) {
+            Button("Удалить", role: .destructive) {
+                if let r = recordToDelete {
+                    modelContext.delete(r)
+                    try? modelContext.save()
+                }
+                recordToDelete = nil
+            }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            Text("Это действие нельзя отменить.")
         }
     }
 
@@ -1065,80 +1093,73 @@ private struct AddBloodPressureSheet: View {
     }
 
     private var bpCard: some View {
-        VStack(spacing: 0) {
-            Text("ДАВЛЕНИЕ И ПУЛЬС")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.top, 14)
-                .padding(.bottom, 8)
-
-            HStack {
-                Spacer()
-                Text("Сист.")
-                    .font(.system(size: 12, weight: .medium))
+        HStack(spacing: 8) {
+            VStack(spacing: 0) {
+                Text("СИСТ.")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(sysColor)
-                    .frame(width: 80, alignment: .center)
-                Text("/")
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-                Text("Диаст.")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(diaColor)
-                    .frame(width: 80, alignment: .center)
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(sysColor)
-                    .padding(.horizontal, 8)
-                Text("Пульс")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(pulseColor)
-                    .frame(width: 80, alignment: .center)
-                Spacer()
-            }
-            .padding(.top, 12)
-            .padding(.bottom, 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(sysColor.opacity(0.12))
 
-            HStack(spacing: 0) {
-                Spacer()
                 Picker("", selection: $systolic) {
-                    ForEach(60...250, id: \.self) { Text("\($0)").tag($0) }
+                    ForEach(60...250, id: \.self) { value in
+                        Text("\(value)").tag(value)
+                    }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 80, height: 120)
+                .frame(height: 120)
                 .clipped()
+            }
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5))
 
-                Text("/")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
+            VStack(spacing: 0) {
+                Text("ДИАСТ.")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(diaColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(diaColor.opacity(0.12))
 
                 Picker("", selection: $diastolic) {
-                    ForEach(40...150, id: \.self) { Text("\($0)").tag($0) }
+                    ForEach(40...150, id: \.self) { value in
+                        Text("\(value)").tag(value)
+                    }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 80, height: 120)
+                .frame(height: 120)
                 .clipped()
+            }
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5))
 
-                Image(systemName: "heart.fill")
-                    .foregroundStyle(sysColor)
-                    .padding(.horizontal, 8)
+            VStack(spacing: 0) {
+                Text("ПУЛЬС")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(pulseColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(pulseColor.opacity(0.12))
 
                 Picker("", selection: $pulse) {
-                    ForEach(30...250, id: \.self) { Text("\($0)").tag($0) }
+                    ForEach(30...250, id: \.self) { value in
+                        Text("\(value)").tag(value)
+                    }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 80, height: 120)
+                .frame(height: 120)
                 .clipped()
-                Spacer()
             }
-            .padding(.bottom, 14)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5))
         }
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(16)
-        .overlay(RoundedRectangle(cornerRadius: 16)
-            .stroke(Color(.separator), lineWidth: 0.5))
     }
 
     private var dateCard: some View {
@@ -1238,80 +1259,73 @@ private struct EditBloodPressureSheet: View {
     }
 
     private var bpCard: some View {
-        VStack(spacing: 0) {
-            Text("ДАВЛЕНИЕ И ПУЛЬС")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.top, 14)
-                .padding(.bottom, 8)
-
-            HStack {
-                Spacer()
-                Text("Сист.")
-                    .font(.system(size: 12, weight: .medium))
+        HStack(spacing: 8) {
+            VStack(spacing: 0) {
+                Text("СИСТ.")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(sysColor)
-                    .frame(width: 80, alignment: .center)
-                Text("/")
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-                Text("Диаст.")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(diaColor)
-                    .frame(width: 80, alignment: .center)
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(sysColor)
-                    .padding(.horizontal, 8)
-                Text("Пульс")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(pulseColor)
-                    .frame(width: 80, alignment: .center)
-                Spacer()
-            }
-            .padding(.top, 12)
-            .padding(.bottom, 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(sysColor.opacity(0.12))
 
-            HStack(spacing: 0) {
-                Spacer()
                 Picker("", selection: $systolic) {
-                    ForEach(60...250, id: \.self) { Text("\($0)").tag($0) }
+                    ForEach(60...250, id: \.self) { value in
+                        Text("\(value)").tag(value)
+                    }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 80, height: 120)
+                .frame(height: 120)
                 .clipped()
+            }
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5))
 
-                Text("/")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
+            VStack(spacing: 0) {
+                Text("ДИАСТ.")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(diaColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(diaColor.opacity(0.12))
 
                 Picker("", selection: $diastolic) {
-                    ForEach(40...150, id: \.self) { Text("\($0)").tag($0) }
+                    ForEach(40...150, id: \.self) { value in
+                        Text("\(value)").tag(value)
+                    }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 80, height: 120)
+                .frame(height: 120)
                 .clipped()
+            }
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5))
 
-                Image(systemName: "heart.fill")
-                    .foregroundStyle(sysColor)
-                    .padding(.horizontal, 8)
+            VStack(spacing: 0) {
+                Text("ПУЛЬС")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(pulseColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(pulseColor.opacity(0.12))
 
                 Picker("", selection: $pulse) {
-                    ForEach(30...250, id: \.self) { Text("\($0)").tag($0) }
+                    ForEach(30...250, id: \.self) { value in
+                        Text("\(value)").tag(value)
+                    }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 80, height: 120)
+                .frame(height: 120)
                 .clipped()
-                Spacer()
             }
-            .padding(.bottom, 14)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5))
         }
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(16)
-        .overlay(RoundedRectangle(cornerRadius: 16)
-            .stroke(Color(.separator), lineWidth: 0.5))
     }
 
     private var dateCard: some View {

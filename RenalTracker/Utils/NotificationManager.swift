@@ -101,17 +101,17 @@ final class NotificationManager {
     /// Полностью пересоздаёт уведомления по приёму лекарств.
     /// Вызывать при изменении списка лекарств или их расписания.
     func rescheduleMedicationNotifications(for medications: [Medication]) {
-        // Сначала удаляем все ранее созданные уведомления med_*
+        // Сбрасываем кэш ID перед пересозданием
+        UserDefaults.standard.removeObject(forKey: "_scheduledMedIDs")
+
         center.getPendingNotificationRequests { [weak self] requests in
             guard let self = self else { return }
-
-            let medIds = requests
-                .map(\.identifier)
-                .filter { $0.hasPrefix("med_") }
-
+            let medIds = requests.map(\.identifier).filter { $0.hasPrefix("med_") }
             self.center.removePendingNotificationRequests(withIdentifiers: medIds)
 
-            // Затем создаём новые уведомления на основе актуального списка
+            // Создаём новые уведомления только если они включены
+            let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+            guard enabled else { return }
             self.scheduleNotifications(for: medications)
         }
     }
@@ -173,8 +173,16 @@ final class NotificationManager {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = UNNotificationSound(named: UNNotificationSoundName("notification.caf"))
         content.badge = 1
+
+        let critical = UserDefaults.standard.bool(forKey: "criticalNotificationsEnabled")
+        if critical {
+            content.interruptionLevel = .timeSensitive
+            content.sound = .defaultCriticalSound(withAudioVolume: 0.8)
+        } else {
+            content.interruptionLevel = .active
+            content.sound = UNNotificationSound(named: UNNotificationSoundName("notification.caf"))
+        }
 
         var dateComponents = DateComponents()
         dateComponents.weekday = key.weekday
@@ -185,8 +193,14 @@ final class NotificationManager {
 
         let identifier = "med_\(key.weekday)_\(key.hour)_\(key.minute)"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-
         center.add(request, withCompletionHandler: nil)
+
+        // Сохраняем ID для синхронного доступа через medicationIdentifiers()
+        var stored = UserDefaults.standard.stringArray(forKey: "_scheduledMedIDs") ?? []
+        if !stored.contains(identifier) {
+            stored.append(identifier)
+            UserDefaults.standard.set(stored, forKey: "_scheduledMedIDs")
+        }
     }
 
     private func dosageDescription(for med: Medication) -> String {
@@ -205,31 +219,28 @@ final class NotificationManager {
 
         let defaults = UserDefaults.standard
 
-        if defaults.bool(forKey: "bpMorningReminderEnabled"),
-           let time = defaults.object(forKey: "bpMorningReminderTime") as? Date {
+        if defaults.bool(forKey: "bpReminderEnabled") {
+            let morning = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+            let evening = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
             scheduleDaily(
                 id: "bp_morning",
-                time: time,
+                time: morning,
                 title: "Измерьте давление 💊",
                 body: "Не забудьте измерить давление и пульс"
             )
-        }
-
-        if defaults.bool(forKey: "bpEveningReminderEnabled"),
-           let time = defaults.object(forKey: "bpEveningReminderTime") as? Date {
             scheduleDaily(
                 id: "bp_evening",
-                time: time,
+                time: evening,
                 title: "Измерьте давление 💊",
                 body: "Вечернее измерение давления и пульса"
             )
         }
 
-        if defaults.bool(forKey: "weightReminderEnabled"),
-           let time = defaults.object(forKey: "weightReminderTime") as? Date {
+        if defaults.bool(forKey: "weightReminderEnabled") {
+            let morning = Calendar.current.date(bySettingHour: 7, minute: 30, second: 0, of: Date()) ?? Date()
             scheduleDaily(
                 id: "weight_reminder",
-                time: time,
+                time: morning,
                 title: "Взвеситесь ⚖️",
                 body: "Время зафиксировать вес"
             )
@@ -247,6 +258,67 @@ final class NotificationManager {
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         center.add(request, withCompletionHandler: nil)
+    }
+
+    // MARK: - Управление уведомлениями о лекарствах
+
+    /// Синхронно возвращает сохранённые идентификаторы уведомлений о лекарствах.
+    func medicationIdentifiers() -> [String] {
+        UserDefaults.standard.stringArray(forKey: "_scheduledMedIDs") ?? []
+    }
+
+    /// Отменяет все уведомления о лекарствах асинхронно.
+    func disableMedicationNotifications() {
+        center.getPendingNotificationRequests { [weak self] requests in
+            guard let self else { return }
+            let ids = requests.map(\.identifier).filter { $0.hasPrefix("med_") }
+            self.center.removePendingNotificationRequests(withIdentifiers: ids)
+            UserDefaults.standard.removeObject(forKey: "_scheduledMedIDs")
+        }
+    }
+
+    /// Обновляет звук и уровень прерывания для уже запланированных
+    /// уведомлений о лекарствах без необходимости доступа к SwiftData.
+    func updateNotifications() {
+        // Если уведомления выключены пользователем — ничего не делаем
+        let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+        guard enabled else { return }
+
+        let critical = UserDefaults.standard.bool(forKey: "criticalNotificationsEnabled")
+
+        center.getPendingNotificationRequests { [weak self] requests in
+            guard let self else { return }
+
+            let medRequests = requests.filter { $0.identifier.hasPrefix("med_") }
+            guard !medRequests.isEmpty else { return }
+
+            let ids = medRequests.map { $0.identifier }
+            self.center.removePendingNotificationRequests(withIdentifiers: ids)
+
+            for request in medRequests {
+                let updated = UNMutableNotificationContent()
+                updated.title = request.content.title
+                updated.body  = request.content.body
+                updated.badge = request.content.badge
+
+                if critical {
+                    updated.interruptionLevel = .timeSensitive
+                    updated.sound = .defaultCriticalSound(withAudioVolume: 0.8)
+                } else {
+                    updated.interruptionLevel = .active
+                    updated.sound = UNNotificationSound(
+                        named: UNNotificationSoundName("notification.caf"))
+                }
+
+                guard let trigger = request.trigger else { continue }
+                let newRequest = UNNotificationRequest(
+                    identifier: request.identifier,
+                    content: updated,
+                    trigger: trigger
+                )
+                self.center.add(newRequest, withCompletionHandler: nil)
+            }
+        }
     }
 
     // MARK: - Диагностика

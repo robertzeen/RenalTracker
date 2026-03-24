@@ -44,7 +44,6 @@ struct AddDoctorVisitView: View {
                             Text("ВРАЧ")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(.secondary)
-                                .tracking(0.5)
                             TextField("ФИО врача (опционально)", text: $doctorName)
                                 .font(.system(size: 15, weight: .medium))
                                 .textInputAutocapitalization(.words)
@@ -59,25 +58,23 @@ struct AddDoctorVisitView: View {
 
                     // 2. Карточка даты
                     VStack(spacing: 0) {
-                        Button { showDatePicker.toggle() } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text("ДАТА ПРИЁМА")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(.secondary)
-                                        .tracking(0.5)
-                                    Text(formattedDateTime)
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundStyle(.primary)
-                                }
-                                Spacer()
-                                Image(systemName: "calendar")
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("ДАТА ПРИЁМА")
+                                    .font(.system(size: 11, weight: .medium))
                                     .foregroundStyle(.secondary)
-                                    .font(.system(size: 16))
+                                Text(formattedDateTime)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.primary)
                             }
-                            .padding(14)
+                            Spacer()
+                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        .padding(14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showDatePicker.toggle() }
 
                         if showDatePicker {
                             Divider()
@@ -105,22 +102,14 @@ struct AddDoctorVisitView: View {
                         Text("ЗАМЕТКИ")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
-                            .tracking(0.5)
 
-                        ZStack(alignment: .topLeading) {
-                            if notes.isEmpty {
-                                Text("Рекомендации врача, изменения в лечении, результаты осмотра, вопросы на следующий приём...")
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(.tertiary)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 4)
-                                    .allowsHitTesting(false)
-                            }
-                            TextEditor(text: $notes)
-                                .font(.system(size: 15))
-                                .frame(minHeight: 200)
-                                .scrollContentBackground(.hidden)
-                        }
+                        TextField(
+                            "Рекомендации врача, изменения в лечении, результаты осмотра, вопросы на следующий приём...",
+                            text: $notes,
+                            axis: .vertical
+                        )
+                        .font(.system(size: 15))
+                        .lineLimit(5...)
                     }
                     .padding(14)
                     .background(Color(.secondarySystemBackground))

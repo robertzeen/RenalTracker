@@ -17,7 +17,7 @@ struct DoctorAppointmentSheet: View {
     @State private var doctorName: String
     @State private var showDatePicker = false
     @State private var showTimePicker = false
-    @State private var showCalendarSuccess = false
+    @AppStorage("doctorCalendarAddedTimestamp") private var calendarAddedTimestamp: Double = 0
 
     init(userProfile: UserProfile?) {
         self.userProfile = userProfile
@@ -35,6 +35,12 @@ struct DoctorAppointmentSheet: View {
     }
 
     // MARK: - Вычисляемые свойства
+
+    private var addedToCalendar: Bool {
+        guard calendarAddedTimestamp > 0 else { return false }
+        let saved = Date(timeIntervalSince1970: calendarAddedTimestamp)
+        return Calendar.current.isDate(saved, equalTo: selectedDate, toGranularity: .minute)
+    }
 
     private var daysUntil: Int {
         Calendar.current.dateComponents(
@@ -88,41 +94,40 @@ struct DoctorAppointmentSheet: View {
 
                     // Карточка даты и времени
                     VStack(spacing: 0) {
-                        Button { showDatePicker.toggle() } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("ДАТА")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    Text(DateFormatter.russianDate.string(from: selectedDate))
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundStyle(.primary)
-                                }
-                                Spacer()
-                                if daysUntil > 0 {
-                                    Text("Через \(daysUntil) дней")
-                                        .font(.caption)
-                                        .foregroundStyle(.blue)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(20)
-                                } else if daysUntil == 0 {
-                                    Text("Сегодня")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 4)
-                                        .background(Color.orange.opacity(0.1))
-                                        .cornerRadius(20)
-                                }
-                                Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("ДАТА")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                Text(DateFormatter.russianDate.string(from: selectedDate))
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(.primary)
                             }
-                            .padding(16)
+                            Spacer()
+                            if daysUntil > 0 {
+                                Text("Через \(daysUntil) дней")
+                                    .font(.caption)
+                                    .foregroundStyle(.blue)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(20)
+                            } else if daysUntil == 0 {
+                                Text("Сегодня")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.orange.opacity(0.1))
+                                    .cornerRadius(20)
+                            }
+                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        .padding(16)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showDatePicker.toggle() }
 
                         if showDatePicker {
                             Divider()
@@ -137,24 +142,23 @@ struct DoctorAppointmentSheet: View {
 
                         Divider()
 
-                        Button { showTimePicker.toggle() } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("ВРЕМЯ")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    Text(DateFormatter.russianTime.string(from: selectedDate))
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundStyle(.primary)
-                                }
-                                Spacer()
-                                Image(systemName: showTimePicker ? "chevron.up" : "chevron.down")
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("ВРЕМЯ")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                Text(DateFormatter.russianTime.string(from: selectedDate))
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(.primary)
                             }
-                            .padding(16)
+                            Spacer()
+                            Image(systemName: showTimePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        .padding(16)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showTimePicker.toggle() }
 
                         if showTimePicker {
                             Divider()
@@ -170,27 +174,44 @@ struct DoctorAppointmentSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 16)
                         .stroke(Color(.separator), lineWidth: 0.5))
 
-                    // Кнопка календаря
-                    Button { addToCalendar() } label: {
-                        Label("Добавить в календарь", systemImage: "calendar.badge.plus")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.blue)
-                            .frame(maxWidth: .infinity)
-                            .padding(14)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(16)
+                    // Кнопка / индикатор календаря
+                    if addedToCalendar {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                            Text("Добавлено в календарь")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.green)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(14)
+                        .background(Color.green.opacity(0.1))
+                        .cornerRadius(16)
+                        .overlay(RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.green.opacity(0.3), lineWidth: 0.5))
+                    } else {
+                        Button {
+                            let name = doctorName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let title = name.isEmpty ? "Приём у врача" : "Приём у врача — \(name)"
+                            addToCalendar(title: title) {
+                                calendarAddedTimestamp = selectedDate.timeIntervalSince1970
+                            }
+                        } label: {
+                            Label("Добавить в календарь", systemImage: "calendar.badge.plus")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.blue)
+                                .frame(maxWidth: .infinity)
+                                .padding(14)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(16)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
                 .padding(16)
             }
             .navigationTitle("Приём у врача")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("Добавлено в календарь", isPresented: $showCalendarSuccess) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Событие добавлено в ваш календарь iPhone")
-            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }
@@ -219,9 +240,7 @@ struct DoctorAppointmentSheet: View {
         )
     }
 
-    private func addToCalendar() {
-        let name = doctorName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let title = name.isEmpty ? "Приём у врача" : "Приём у врача — \(name)"
+    private func addToCalendar(title: String, completion: @escaping () -> Void) {
         let store = EKEventStore()
         store.requestFullAccessToEvents { granted, _ in
             guard granted else { return }
@@ -234,7 +253,7 @@ struct DoctorAppointmentSheet: View {
                 event.notes = "Добавлено из RenalTracker"
                 do {
                     try store.save(event, span: .thisEvent)
-                    showCalendarSuccess = true
+                    completion()
                 } catch {
                     print("Ошибка добавления в календарь: \(error)")
                 }

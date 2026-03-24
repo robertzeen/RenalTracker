@@ -115,41 +115,40 @@ struct DoctorVisitDetailView: View {
     private var dateTimeCard: some View {
         VStack(spacing: 0) {
             // Строка даты
-            Button { showDatePicker.toggle() } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("ДАТА")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(formattedDate)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(.primary)
-                    }
-                    Spacer()
-                    if daysUntil > 0 {
-                        Text("Через \(daysUntil) дней")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(20)
-                    } else if daysUntil == 0 {
-                        Text("Сегодня")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(20)
-                    }
-                    Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ДАТА")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Text(formattedDate)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.primary)
                 }
-                .padding(16)
+                Spacer()
+                if daysUntil > 0 {
+                    Text("Через \(daysUntil) дней")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(20)
+                } else if daysUntil == 0 {
+                    Text("Сегодня")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(20)
+                }
+                Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .padding(16)
+            .contentShape(Rectangle())
+            .onTapGesture { showDatePicker.toggle() }
 
             if showDatePicker {
                 Divider()
@@ -165,24 +164,23 @@ struct DoctorVisitDetailView: View {
             Divider()
 
             // Строка времени
-            Button { showTimePicker.toggle() } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("ВРЕМЯ")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(formattedTime)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(.primary)
-                    }
-                    Spacer()
-                    Image(systemName: showTimePicker ? "chevron.up" : "chevron.down")
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ВРЕМЯ")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Text(formattedTime)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.primary)
                 }
-                .padding(16)
+                Spacer()
+                Image(systemName: showTimePicker ? "chevron.up" : "chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .padding(16)
+            .contentShape(Rectangle())
+            .onTapGesture { showTimePicker.toggle() }
 
             if showTimePicker {
                 Divider()

@@ -402,60 +402,47 @@ struct LabResultsView: View {
                         }
                         .padding()
                     } else {
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text("ОТСЛЕЖИВАЕМЫЕ АНАЛИЗЫ")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 4)
-                                    .padding(.bottom, 4)
+                        List {
+                            Section {
+                                ForEach(sortedTests) { test in
+                                    Button {
+                                        selectedTestForDetails = test
+                                    } label: {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 3) {
+                                                Text(test.name)
+                                                    .font(.headline)
+                                                    .foregroundStyle(.primary)
 
-                                VStack(spacing: 0) {
-                                    ForEach(Array(sortedTests.enumerated()), id: \.element.id) { index, test in
-                                        Button {
-                                            selectedTestForDetails = test
-                                        } label: {
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 3) {
-                                                    Text(test.name)
-                                                        .font(.headline)
-
-                                                    if let latest = test.results.sorted(by: { $0.date > $1.date }).first {
-                                                        Text("\(formattedValue(latest, unit: test.unit)) · \(DateFormatter.russianDate.string(from: latest.date))")
-                                                            .font(.system(size: 13))
-                                                            .foregroundStyle(.secondary)
-                                                    }
+                                                if let latest = test.results.sorted(by: { $0.date > $1.date }).first {
+                                                    Text("\(formattedValue(latest, unit: test.unit)) · \(DateFormatter.russianDate.string(from: latest.date))")
+                                                        .font(.system(size: 13))
+                                                        .foregroundStyle(.secondary)
                                                 }
-                                                Spacer()
-                                                Image(systemName: "chevron.right")
-                                                    .font(.system(size: 12))
-                                                    .foregroundStyle(.tertiary)
                                             }
-                                            .padding(14)
-                                            .contentShape(Rectangle())
+                                            Spacer()
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12))
+                                                .foregroundStyle(.tertiary)
                                         }
-                                        .buttonStyle(.plain)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                            Button(role: .destructive) {
-                                                testToDelete = test
-                                            } label: {
-                                                Image(systemName: "trash")
-                                            }
-                                        }
-
-                                        if index < sortedTests.count - 1 {
-                                            Divider()
-                                                .padding(.leading, 14)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            testToDelete = test
+                                        } label: {
+                                            Label("Удалить", systemImage: "trash")
                                         }
                                     }
                                 }
-                                .background(Color(.secondarySystemBackground))
-                                .cornerRadius(16)
-                                .overlay(RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color(.separator), lineWidth: 0.5))
+                            } header: {
+                                Text("ОТСЛЕЖИВАЕМЫЕ АНАЛИЗЫ")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
                             }
-                            .padding(16)
                         }
+                        .listStyle(.insetGrouped)
                     }
                 }
                 .navigationTitle("Анализы")
@@ -524,14 +511,11 @@ struct LabResultsView: View {
             LabTestDetailView(test: test)
                 .presentationDetents([.large])
         }
-        .alert("Вы уверены, что хотите удалить запись?",
+        .alert("Удалить анализ?",
                isPresented: Binding(
                     get: { testToDelete != nil },
-                    set: { newValue in
-                        if !newValue { testToDelete = nil }
-                    }
+                    set: { if !$0 { testToDelete = nil } }
                )) {
-            Button("Отмена", role: .cancel) { }
             Button("Удалить", role: .destructive) {
                 if let t = testToDelete {
                     modelContext.delete(t)
@@ -539,6 +523,9 @@ struct LabResultsView: View {
                 }
                 testToDelete = nil
             }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            Text("Будут удалены все результаты по анализу «\(testToDelete?.name ?? "")». Это действие нельзя отменить.")
         }
         .confirmationDialog(
             "Экспорт анализов",
@@ -845,11 +832,11 @@ private struct LabTestDetailView: View, Identifiable {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     resultToDelete = result
                                 } label: {
-                                    Image(systemName: "trash")
+                                    Label("Удалить", systemImage: "trash")
                                 }
                             }
 
@@ -932,14 +919,11 @@ private struct LabTestDetailView: View, Identifiable {
         .sheet(item: $pdfURL) { url in
             ShareSheet(activityItems: [url])
         }
-        .alert("Вы уверены, что хотите удалить запись?",
+        .alert("Удалить измерение?",
                isPresented: Binding(
                     get: { resultToDelete != nil },
-                    set: { newValue in
-                        if !newValue { resultToDelete = nil }
-                    }
+                    set: { if !$0 { resultToDelete = nil } }
                )) {
-            Button("Отмена", role: .cancel) { }
             Button("Удалить", role: .destructive) {
                 if let r = resultToDelete {
                     modelContext.delete(r)
@@ -947,6 +931,9 @@ private struct LabTestDetailView: View, Identifiable {
                 }
                 resultToDelete = nil
             }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            Text("Это действие нельзя отменить.")
         }
     }
 
@@ -1329,42 +1316,92 @@ private struct EditReferenceRangeSheet: View {
 
     init(test: TrackedLabTest) {
         self.test = test
-        if let min = test.referenceMin {
-            _minText = State(initialValue: String(min))
-        } else {
-            _minText = State(initialValue: "")
-        }
-        if let max = test.referenceMax {
-            _maxText = State(initialValue: String(max))
-        } else {
-            _maxText = State(initialValue: "")
-        }
+        _minText = State(initialValue: Self.formatOptional(test.referenceMin))
+        _maxText = State(initialValue: Self.formatOptional(test.referenceMax))
         _unitText = State(initialValue: test.unit)
+    }
+
+    private static func formatOptional(_ value: Double?) -> String {
+        guard let v = value else { return "" }
+        return v.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(v)) : String(v)
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Референсные значения") {
-                    TextField("Нижняя граница", text: $minText)
-                        .keyboardType(.decimalPad)
-                    TextField("Верхняя граница", text: $maxText)
-                        .keyboardType(.decimalPad)
-                }
+            ScrollView {
+                VStack(spacing: 12) {
+                    // Карточка референсных значений
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("НИЖНЯЯ ГРАНИЦА")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                TextField("Введите значение", text: $minText)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .keyboardType(.decimalPad)
+                            }
+                            Spacer()
+                        }
+                        .padding(14)
 
-                Section("Единицы измерения") {
-                    TextField("Единица измерения", text: $unitText)
-                        .textInputAutocapitalization(.never)
+                        Divider().padding(.leading, 14)
+
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("ВЕРХНЯЯ ГРАНИЦА")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                TextField("Введите значение", text: $maxText)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .keyboardType(.decimalPad)
+                            }
+                            Spacer()
+                        }
+                        .padding(14)
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
+
+                    // Карточка единиц измерения
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("ЕДИНИЦЫ ИЗМЕРЕНИЯ")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            TextField("пг/мл, ммоль/л...", text: $unitText)
+                                .font(.system(size: 15, weight: .medium))
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                        }
+                        Spacer()
+                    }
+                    .padding(14)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
                 }
+                .padding(16)
             }
-            .navigationTitle("Нормы для \"\(test.name)\"")
+            .navigationTitle("Референсные значения")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                        save()
+                    Button("Сохранить") { save(); dismiss() }
+                        .fontWeight(.medium)
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Готово") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil)
                     }
                 }
             }
@@ -1380,7 +1417,6 @@ private struct EditReferenceRangeSheet: View {
         test.unit = unitText.trimmingCharacters(in: .whitespaces)
 
         try? modelContext.save()
-        dismiss()
     }
 }
 
