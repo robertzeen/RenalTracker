@@ -189,10 +189,7 @@ struct LabResultsView: View {
 
         _ = PDFDocument(data: data)
 
-        let fileFormatter = DateFormatter()
-        fileFormatter.locale = Locale(identifier: "ru_RU")
-        fileFormatter.dateFormat = "yyyy-MM-dd"
-        let datePart = fileFormatter.string(from: Date())
+        let datePart = DateFormatter.fileDate.string(from: Date())
         let fileName = "LabResults-\(datePart).pdf"
 
         guard let fileURL = saveToTemp(data: data, fileName: fileName) else { return }
@@ -328,10 +325,7 @@ struct LabResultsView: View {
 
         _ = PDFDocument(data: data)
 
-        let fileFormatter = DateFormatter()
-        fileFormatter.locale = Locale(identifier: "ru_RU")
-        fileFormatter.dateFormat = "yyyy-MM-dd"
-        let datePart = fileFormatter.string(from: Date())
+        let datePart = DateFormatter.fileDate.string(from: Date())
 
         let safeName = test.name
             .replacingOccurrences(of: " ", with: "_")

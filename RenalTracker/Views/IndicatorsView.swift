@@ -960,13 +960,6 @@ private struct PDFBloodPressureChartView: View {
         let minY = max(0, minDia - 10)
         let maxY = maxSys + 10
 
-        let shortDateFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.locale = Locale(identifier: "ru_RU")
-            f.dateFormat = "d MMM"
-            return f
-        }()
-
         return Chart {
             ForEach(sorted) { record in
                 LineMark(
@@ -988,7 +981,7 @@ private struct PDFBloodPressureChartView: View {
                 AxisGridLine()
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
-                        Text(shortDateFormatter.string(from: date))
+                        Text(DateFormatter.russianShortDate.string(from: date))
                             .font(.caption2)
                     }
                 }
@@ -1009,13 +1002,6 @@ private struct PulseChartForPDF: View {
         let minY = max(0, minPulse - 5)
         let maxY = maxPulse + 5
 
-        let shortDateFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.locale = Locale(identifier: "ru_RU")
-            f.dateFormat = "d MMM"
-            return f
-        }()
-
         return Chart {
             ForEach(sorted) { record in
                 LineMark(
@@ -1031,7 +1017,7 @@ private struct PulseChartForPDF: View {
                 AxisGridLine()
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
-                        Text(shortDateFormatter.string(from: date))
+                        Text(DateFormatter.russianShortDate.string(from: date))
                             .font(.caption2)
                     }
                 }

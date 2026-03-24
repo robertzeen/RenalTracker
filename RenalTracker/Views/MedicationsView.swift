@@ -471,10 +471,7 @@ struct MedicationsView: View {
     }
 
     private func generatePDFFileURL(from data: Data) throws -> URL {
-        let fileDateFormatter = DateFormatter()
-        fileDateFormatter.locale = Locale(identifier: "ru_RU")
-        fileDateFormatter.dateFormat = "yyyy-MM-dd"
-        let datePart = fileDateFormatter.string(from: Date())
+        let datePart = DateFormatter.fileDate.string(from: Date())
         let fileName = "Medications-\(datePart).pdf"
 
         let tempDir = FileManager.default.temporaryDirectory

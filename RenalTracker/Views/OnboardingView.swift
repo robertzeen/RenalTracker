@@ -445,9 +445,7 @@ struct OnboardingView: View {
     }
 
     private func monthSymbol(for month: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        return formatter.monthSymbols[month - 1]
+        DateFormatter.russianMonthSymbols[month - 1]
     }
 
     private func updateBirthDateFromComponents() {
