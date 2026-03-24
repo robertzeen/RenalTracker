@@ -189,6 +189,7 @@ struct HomeView: View {
             }
         }
         .onAppear {
+            refreshTimer?.invalidate()
             refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
                 currentTime = Date()
             }
