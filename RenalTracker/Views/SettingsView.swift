@@ -24,6 +24,14 @@ struct SettingsView: View {
     @State private var pdOngoing: Bool
     @State private var transplantDate: Date
 
+    // MARK: - Напоминания об измерениях
+    @State private var bpMorningEnabled: Bool
+    @State private var bpMorningTime: Date
+    @State private var bpEveningEnabled: Bool
+    @State private var bpEveningTime: Date
+    @State private var weightReminderEnabled: Bool
+    @State private var weightReminderTime: Date
+
     init(profile: UserProfile, onDismiss: @escaping () -> Void) {
         self.profile = profile
         self.onDismiss = onDismiss
@@ -35,12 +43,25 @@ struct SettingsView: View {
         _pdEndDate = State(initialValue: profile.pdEndDate ?? Date())
         _pdOngoing = State(initialValue: profile.pdOngoing)
         _transplantDate = State(initialValue: profile.transplantDate ?? Date())
+
+        let defaults = UserDefaults.standard
+        let morningDefault = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+        let eveningDefault = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
+        let weightDefault  = Calendar.current.date(bySettingHour: 7, minute: 30, second: 0, of: Date()) ?? Date()
+
+        _bpMorningEnabled      = State(initialValue: defaults.bool(forKey: "bpMorningReminderEnabled"))
+        _bpMorningTime         = State(initialValue: (defaults.object(forKey: "bpMorningReminderTime") as? Date) ?? morningDefault)
+        _bpEveningEnabled      = State(initialValue: defaults.bool(forKey: "bpEveningReminderEnabled"))
+        _bpEveningTime         = State(initialValue: (defaults.object(forKey: "bpEveningReminderTime") as? Date) ?? eveningDefault)
+        _weightReminderEnabled = State(initialValue: defaults.bool(forKey: "weightReminderEnabled"))
+        _weightReminderTime    = State(initialValue: (defaults.object(forKey: "weightReminderTime") as? Date) ?? weightDefault)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 statusSection
+                remindersSection
             }
             .navigationTitle("Настройки")
             .navigationBarTitleDisplayMode(.inline)
@@ -52,6 +73,7 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Сохранить") {
+                        saveReminderSettings()
                         saveAndDismiss()
                     }
                 }
@@ -215,6 +237,66 @@ struct SettingsView: View {
         case .postTransplant:
             transplantDate = Date()
         }
+    }
+
+    // MARK: - Секция напоминаний
+
+    private var remindersSection: some View {
+        Section {
+            // ── Давление ──────────────────────────────────
+            Toggle("Напоминание об измерении давления", isOn: $bpMorningEnabled)
+                .onChange(of: bpMorningEnabled) { _, _ in saveReminderSettings() }
+
+            if bpMorningEnabled {
+                DatePicker(
+                    "Утреннее измерение",
+                    selection: $bpMorningTime,
+                    displayedComponents: .hourAndMinute
+                )
+                .environment(\.locale, Locale(identifier: "ru_RU"))
+                .onChange(of: bpMorningTime) { _, _ in saveReminderSettings() }
+
+                Toggle("Добавить вечернее измерение", isOn: $bpEveningEnabled)
+                    .onChange(of: bpEveningEnabled) { _, _ in saveReminderSettings() }
+
+                if bpEveningEnabled {
+                    DatePicker(
+                        "Вечернее измерение",
+                        selection: $bpEveningTime,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .environment(\.locale, Locale(identifier: "ru_RU"))
+                    .onChange(of: bpEveningTime) { _, _ in saveReminderSettings() }
+                }
+            }
+
+            // ── Вес ───────────────────────────────────────
+            Toggle("Напоминание о взвешивании", isOn: $weightReminderEnabled)
+                .onChange(of: weightReminderEnabled) { _, _ in saveReminderSettings() }
+
+            if weightReminderEnabled {
+                DatePicker(
+                    "Время взвешивания",
+                    selection: $weightReminderTime,
+                    displayedComponents: .hourAndMinute
+                )
+                .environment(\.locale, Locale(identifier: "ru_RU"))
+                .onChange(of: weightReminderTime) { _, _ in saveReminderSettings() }
+            }
+        } header: {
+            Text("НАПОМИНАНИЯ ОБ ИЗМЕРЕНИЯХ")
+        }
+    }
+
+    private func saveReminderSettings() {
+        let defaults = UserDefaults.standard
+        defaults.set(bpMorningEnabled,      forKey: "bpMorningReminderEnabled")
+        defaults.set(bpMorningTime,         forKey: "bpMorningReminderTime")
+        defaults.set(bpEveningEnabled,      forKey: "bpEveningReminderEnabled")
+        defaults.set(bpEveningTime,         forKey: "bpEveningReminderTime")
+        defaults.set(weightReminderEnabled, forKey: "weightReminderEnabled")
+        defaults.set(weightReminderTime,    forKey: "weightReminderTime")
+        NotificationManager.shared.scheduleMeasurementReminders()
     }
 
     private func saveAndDismiss() {

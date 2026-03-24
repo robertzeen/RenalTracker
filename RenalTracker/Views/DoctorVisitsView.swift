@@ -10,9 +10,9 @@ struct DoctorVisitsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DoctorVisit.date, order: .reverse) private var visits: [DoctorVisit]
 
-    @State private var visitToEdit: DoctorVisit?
-    @State private var visitToDelete: DoctorVisit?
-    @State private var isCreatingNewVisit: Bool = false
+    @State private var isShowingAddVisit = false
+
+    // MARK: - Группировка по месяцу
 
     private var calendar: Calendar {
         var cal = Calendar.current
@@ -20,171 +20,178 @@ struct DoctorVisitsView: View {
         return cal
     }
 
-    private var monthYearFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "LLLL yyyy"
-        return formatter
-    }
-
-    /// Группировка приёмов по месяцу и году, от новых к старым
     private var groupedByMonth: [(date: Date, visits: [DoctorVisit])] {
         let grouped = Dictionary(grouping: visits) { visit -> Date in
             let comps = calendar.dateComponents([.year, .month], from: visit.date)
             return calendar.date(from: comps) ?? visit.date
         }
-
         return grouped
-            .map { (key, value) in
-                let sorted = value.sorted { $0.date > $1.date }
-                return (date: key, visits: sorted)
+            .map { key, value in
+                (date: key, visits: value.sorted { $0.date > $1.date })
             }
             .sorted { $0.date > $1.date }
     }
 
     private func sectionTitle(for date: Date) -> String {
-        let base = monthYearFormatter.string(from: date)
-        guard let first = base.first else { return base }
-        return String(first).uppercased() + base.dropFirst()
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter.string(from: date).uppercased()
     }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
             Group {
                 if visits.isEmpty {
-                    VStack(spacing: 24) {
-                        Image(systemName: "stethoscope")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80, height: 80)
-                            .foregroundStyle(.secondary)
-
-                        Text("Здесь будет история ваших приёмов у врача")
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.secondary)
-
-                        Button("Добавить первый приём") {
-                            addNewVisit()
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .padding()
+                    emptyState
                 } else {
-                    List {
-                        ForEach(groupedByMonth, id: \.date) { group in
-                            Section(header: Text(sectionTitle(for: group.date))) {
-                                ForEach(group.visits) { visit in
-                                    Button {
-                                        visitToEdit = visit
-                                    } label: {
-                                        DoctorVisitRow(visit: visit)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .swipeActions(edge: .trailing) {
-                                        Button(role: .destructive) {
-                                            visitToDelete = visit
-                                        } label: {
-                                            Label("Удалить", systemImage: "trash")
-                                        }
-                                    }
+                    ScrollView {
+                        LazyVStack(spacing: 20, pinnedViews: []) {
+                            ForEach(groupedByMonth, id: \.date) { group in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    sectionHeader(for: group.date)
+                                    monthCard(visits: group.visits)
                                 }
+                                .padding(.horizontal, 16)
                             }
                         }
+                        .padding(.vertical, 16)
                     }
                 }
             }
             .navigationTitle("Приёмы у врача")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        addNewVisit()
+                        isShowingAddVisit = true
                     } label: {
-                        Image(systemName: "plus")
+                        ZStack {
+                            Circle()
+                                .fill(Color.blue.opacity(0.15))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.blue)
+                        }
                     }
-                    .accessibilityLabel("Добавить приём")
                 }
             }
         }
-        .sheet(item: $visitToEdit, onDismiss: { isCreatingNewVisit = false }) { visit in
-            DoctorVisitDetailView(visit: visit, isNewVisit: isCreatingNewVisit)
+        .sheet(isPresented: $isShowingAddVisit) {
+            AddDoctorVisitView()
         }
-        .alert(
-            "Вы уверены, что хотите удалить запись?",
-            isPresented: Binding(
-                get: { visitToDelete != nil },
-                set: { newValue in
-                    if !newValue { visitToDelete = nil }
+    }
+
+    // MARK: - Компоненты
+
+    private func sectionHeader(for date: Date) -> some View {
+        Text(sectionTitle(for: date))
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.secondary)
+            .tracking(1)
+            .padding(.leading, 4)
+            .padding(.bottom, 4)
+    }
+
+    private func monthCard(visits visitsInMonth: [DoctorVisit]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(visitsInMonth.enumerated()), id: \.element.id) { index, visit in
+                NavigationLink(destination: AddDoctorVisitView(existingVisit: visit)) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.blue.opacity(0.12))
+                                .frame(width: 36, height: 36)
+                            Text("👩‍⚕️")
+                                .font(.system(size: 16))
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(visit.doctorName ?? "Без врача")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.primary)
+
+                            Text(DateFormatter.russianDateTime.string(from: visit.date))
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+
+                            if let notes = visit.notes, !notes.isEmpty {
+                                Text(notes)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .padding(.top, 2)
+                            } else {
+                                Text("Заметок нет")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.tertiary)
+                                    .italic()
+                            }
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(14)
                 }
-            )
-        ) {
-            Button("Отмена", role: .cancel) {
-                visitToDelete = nil
-            }
-            Button("Удалить", role: .destructive) {
-                if let visit = visitToDelete {
-                    modelContext.delete(visit)
-                    try? modelContext.save()
+                .buttonStyle(.plain)
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        modelContext.delete(visit)
+                        try? modelContext.save()
+                    } label: {
+                        Label("Удалить", systemImage: "trash")
+                    }
                 }
-                visitToDelete = nil
+
+                if index < visitsInMonth.count - 1 {
+                    Divider()
+                        .padding(.leading, 62)
+                }
             }
         }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5)
+        )
     }
 
-    private func addNewVisit() {
-        let visit = DoctorVisit(date: Date())
-        modelContext.insert(visit)
-        try? modelContext.save()
-        isCreatingNewVisit = true
-        visitToEdit = visit
-    }
-}
-
-// MARK: - Строка списка
-
-private struct DoctorVisitRow: View {
-    let visit: DoctorVisit
-
-    private var dateText: String {
-        DateFormatter.russianDateTime.string(from: visit.date)
-    }
-
-    private var doctorLine: String? {
-        guard let name = visit.doctorName?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !name.isEmpty else { return nil }
-        return name
-    }
-
-    private var notesPreview: String {
-        guard let notes = visit.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return "Заметок нет"
-        }
-        return notes
-            .split(separator: "\n")
-            .prefix(2)
-            .joined(separator: "\n")
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(dateText)
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 80, height: 80)
+                Text("🏥")
+                    .font(.system(size: 36))
+            }
+            Text("Нет записей о приёмах")
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Text("Здесь будет история ваших\nприёмов у врача")
                 .font(.subheadline)
-                .fontWeight(.semibold)
-
-            if let doctorLine {
-                Text(doctorLine)
-                    .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button {
+                isShowingAddVisit = true
+            } label: {
+                Text("Добавить первый приём")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.blue)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
             }
-
-            Text(notesPreview)
-                .font(.footnote)
-                .foregroundStyle(
-                    (visit.notes?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
-                        ? .secondary : .primary
-                )
-                .lineLimit(2)
         }
-        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, 80)
     }
 }
-

@@ -52,6 +52,10 @@ struct LabResultsView: View {
     @State private var pendingNavigationToTest: TrackedLabTest?
     @State private var testToDelete: TrackedLabTest?
 
+    private var sortedTests: [TrackedLabTest] {
+        trackedTests.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+    }
+
     @State private var isShowingExportDialog = false
     @State private var isShowingExportTestDialog = false
     @State private var isShowingExportPeriodDialog = false
@@ -391,7 +395,7 @@ struct LabResultsView: View {
                     } else {
                         List {
                             Section {
-                                ForEach(trackedTests) { test in
+                                ForEach(sortedTests) { test in
                                     Button {
                                         selectedTestForDetails = test
                                     } label: {
@@ -527,7 +531,7 @@ struct LabResultsView: View {
             isPresented: $isShowingExportTestDialog,
             titleVisibility: .visible
         ) {
-            ForEach(trackedTests) { test in
+            ForEach(sortedTests) { test in
                 Button(test.name) {
                     testForExport = test
                     isShowingExportPeriodDialog = true

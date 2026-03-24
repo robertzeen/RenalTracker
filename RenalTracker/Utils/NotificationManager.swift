@@ -194,6 +194,61 @@ final class NotificationManager {
         return dosage.isEmpty ? med.name : "\(med.name) \(dosage)"
     }
 
+    // MARK: - Напоминания об измерениях
+
+    /// Пересоздаёт ежедневные напоминания об измерении давления и веса
+    /// на основе текущих настроек в UserDefaults.
+    func scheduleMeasurementReminders() {
+        center.removePendingNotificationRequests(
+            withIdentifiers: ["bp_morning", "bp_evening", "weight_reminder"]
+        )
+
+        let defaults = UserDefaults.standard
+
+        if defaults.bool(forKey: "bpMorningReminderEnabled"),
+           let time = defaults.object(forKey: "bpMorningReminderTime") as? Date {
+            scheduleDaily(
+                id: "bp_morning",
+                time: time,
+                title: "Измерьте давление 💊",
+                body: "Не забудьте измерить давление и пульс"
+            )
+        }
+
+        if defaults.bool(forKey: "bpEveningReminderEnabled"),
+           let time = defaults.object(forKey: "bpEveningReminderTime") as? Date {
+            scheduleDaily(
+                id: "bp_evening",
+                time: time,
+                title: "Измерьте давление 💊",
+                body: "Вечернее измерение давления и пульса"
+            )
+        }
+
+        if defaults.bool(forKey: "weightReminderEnabled"),
+           let time = defaults.object(forKey: "weightReminderTime") as? Date {
+            scheduleDaily(
+                id: "weight_reminder",
+                time: time,
+                title: "Взвеситесь ⚖️",
+                body: "Время зафиксировать вес"
+            )
+        }
+    }
+
+    private func scheduleDaily(id: String, time: Date, title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("notification.caf"))
+        content.badge = 1
+
+        let components = Calendar.current.dateComponents([.hour, .minute], from: time)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        center.add(request, withCompletionHandler: nil)
+    }
+
     // MARK: - Диагностика
 
     /// Печатает в консоль все запланированные уведомления (для отладки).

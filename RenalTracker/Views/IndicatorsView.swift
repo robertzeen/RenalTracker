@@ -270,6 +270,7 @@ struct IndicatorsView: View {
 
 struct BloodPressureListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \BloodPressure.date, order: .reverse)
     private var records: [BloodPressure]
@@ -361,7 +362,18 @@ struct BloodPressureListView: View {
             }
         }
         .navigationTitle("Давление и пульс")
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Назад")
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 if !records.isEmpty {
                     Button {
@@ -478,32 +490,6 @@ struct BloodPressureListView: View {
             (subtitle as NSString).draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 60), withAttributes: subtitleAttributes)
             y += 60
 
-            // График давления
-            let bpChartView = PDFBloodPressureChartView(records: records)
-                .padding(16)
-                .clipped()
-            let bpRenderer = ImageRenderer(content: bpChartView)
-            bpRenderer.proposedSize = ProposedViewSize(width: 480, height: 180)
-            if let bpImage = bpRenderer.uiImage {
-                let chartHeight: CGFloat = 160
-                let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
-                bpImage.draw(in: chartRect)
-                y += chartHeight + 16
-            }
-
-            // График пульса
-            let pulseChartView = PulseChartForPDF(records: records)
-                .padding(16)
-                .clipped()
-            let pulseRenderer = ImageRenderer(content: pulseChartView)
-            pulseRenderer.proposedSize = ProposedViewSize(width: 480, height: 180)
-            if let pulseImage = pulseRenderer.uiImage {
-                let chartHeight: CGFloat = 160
-                let chartRect = CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight)
-                pulseImage.draw(in: chartRect)
-                y += chartHeight + 16
-            }
-
             // Таблица заголовков
             let contentWidth = pageRect.width - 2 * margin
             let dateWidth = contentWidth * 0.25
@@ -599,6 +585,7 @@ struct BloodPressureListView: View {
 
 struct WeightListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \Weight.date, order: .reverse)
     private var records: [Weight]
@@ -641,6 +628,19 @@ struct WeightListView: View {
             }
         }
         .navigationTitle("Вес")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Назад")
+                    }
+                }
+            }
+        }
         .sheet(item: $recordToEdit) { record in
             EditWeightSheet(record: record)
                 .presentationDetents([.medium, .large])
@@ -935,15 +935,15 @@ private struct AddWeightSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    @State private var weightValue: Double = 70.0
+    @State private var kilograms: Int = 80
+    @State private var decimalPart: Int = 0
     @State private var date: Date = Date()
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Вес") {
-                    TextField("Вес (кг)", value: $weightValue, format: .number)
-                        .keyboardType(.decimalPad)
+                    WeightWheelPicker(kilograms: $kilograms, decimalPart: $decimalPart)
                 }
 
                 Section("Дата и время") {
@@ -955,24 +955,18 @@ private struct AddWeightSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                        save()
-                    }
+                    Button("Сохранить") { save() }
                 }
             }
         }
     }
 
     private func save() {
-        let record = Weight(
-            valueKg: weightValue,
-            date: date
-        )
+        let value = Double(kilograms) + Double(decimalPart) / 10.0
+        let record = Weight(valueKg: value, date: date)
         modelContext.insert(record)
         try? modelContext.save()
         dismiss()
@@ -987,12 +981,16 @@ private struct EditWeightSheet: View {
 
     let record: Weight
 
-    @State private var weightValue: Double
+    @State private var kilograms: Int
+    @State private var decimalPart: Int
     @State private var date: Date
 
     init(record: Weight) {
         self.record = record
-        _weightValue = State(initialValue: record.valueKg)
+        let kg = Int(record.valueKg)
+        let dec = Int((record.valueKg * 10).truncatingRemainder(dividingBy: 10))
+        _kilograms = State(initialValue: max(20, min(250, kg)))
+        _decimalPart = State(initialValue: max(0, min(9, dec)))
         _date = State(initialValue: record.date)
     }
 
@@ -1000,36 +998,70 @@ private struct EditWeightSheet: View {
         NavigationStack {
             Form {
                 Section("Вес") {
-                    TextField("Вес (кг)", value: $weightValue, format: .number)
-                        .keyboardType(.decimalPad)
+                    WeightWheelPicker(kilograms: $kilograms, decimalPart: $decimalPart)
                 }
 
                 Section("Дата и время") {
                     DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                        .environment(\.locale, Locale(identifier: "ru_RU"))
                 }
             }
             .navigationTitle("Редактирование")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить изменения") {
-                        save()
-                    }
+                    Button("Сохранить изменения") { save() }
                 }
             }
         }
     }
 
     private func save() {
-        record.valueKg = weightValue
+        record.valueKg = Double(kilograms) + Double(decimalPart) / 10.0
         record.date = date
         try? modelContext.save()
         dismiss()
+    }
+}
+
+// MARK: - Weight Wheel Picker
+
+private struct WeightWheelPicker: View {
+    @Binding var kilograms: Int
+    @Binding var decimalPart: Int
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Picker("", selection: $kilograms) {
+                ForEach(20...250, id: \.self) { value in
+                    Text("\(value)").tag(value)
+                }
+            }
+            .pickerStyle(.wheel)
+            .frame(width: 100, height: 120)
+            .clipped()
+
+            Text(",")
+                .font(.title)
+                .padding(.horizontal, 4)
+
+            Picker("", selection: $decimalPart) {
+                ForEach([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], id: \.self) { value in
+                    Text("\(value)").tag(value)
+                }
+            }
+            .pickerStyle(.wheel)
+            .frame(width: 80, height: 120)
+            .clipped()
+
+            Text("кг")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 8)
+        }
     }
 }
 

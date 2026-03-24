@@ -5,18 +5,14 @@
 
 import SwiftUI
 import SwiftData
+import EventKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var isShowingDoctorDateSheet = false
-    @State private var doctorAppointmentDatePicker: Date = Date()
-
     @State private var isShowingLabTestDateSheet = false
-    @State private var labTestDatePicker: Date = Date()
-
     @State private var isShowingSettings = false
-    @State private var doctorAppointmentDoctorName: String = ""
 
     @State private var currentTime = Date()
     @State private var refreshTimer: Timer?
@@ -95,77 +91,9 @@ struct HomeView: View {
         weightRecords.first
     }
 
-    private var dailyQuote: (text: String, author: String) {
-        let quotes: [(String, String)] = [
-            ("В слабости мы находим силу.", "Лев Толстой"),
-            ("Здоровье — это не всё, но без здоровья всё — ничто.", "Артур Шопенгауэр"),
-            ("Пока мы откладываем жизнь, она проходит.", "Сенека"),
-            ("Не то, что с нами происходит, а наша реакция на это имеет значение.", "Эпиктет"),
-            ("Терпение горько, но плод его сладок.", "Жан-Жак Руссо"),
-            ("Человек, у которого есть «зачем» жить, может вынести почти любое «как».", "Фридрих Ницше"),
-            ("Жизнь — это то, что происходит с тобой, пока ты строишь другие планы.", "Джон Леннон"),
-            ("Здоровье дороже богатства.", "Джордж Герберт"),
-            ("Сила не в том, чтобы не падать, а в том, чтобы подниматься после каждого падения.", "Конфуций"),
-            ("Жизнь — это 10% того, что с тобой происходит, и 90% — как ты на это реагируешь.", "Чарльз Свиндолл"),
-            ("У нас есть возможность выбирать отношение к тому, что нам дано.", "Виктор Франкл"),
-            ("Действие не всегда приносит счастье; но без действия нет счастья.", "Уинстон Черчилль"),
-            ("Счастье — не случайность, не подарок. Оно — результат внутренней работы.", "Далай-лама XIV"),
-            ("Время, которое мы имеем, — это время, которое мы выбираем.", "Марк Аврелий"),
-            ("Терпение — ключ к радости.", "Абу Хамид аль-Газали"),
-            ("Тот, кто знает, зачем жить, вынесет почти любое как.", "Виктор Франкл"),
-            ("Здоровье — величайшее из благ.", "Софокл"),
-            ("Не бойся медленного прогресса. Бойся стоять на месте.", "Брюс Ли"),
-            ("В каждом человеке есть солнце. Только дайте ему светить.", "Сократ"),
-            ("Смысл жизни в том, чтобы дать жизни смысл.", "Виктор Франкл"),
-            ("Трудности готовят обычных людей к необычной судьбе.", "Клайв Льюис"),
-            ("Жизнь измеряется не количеством вдохов, а моментами, что захватывают дух.", "Майя Энджелоу"),
-            ("Здоровье так же заразительно, как и болезнь.", "Ромен Роллан"),
-            ("Воля — это то, что заставляет тебя побеждать, когда твой разум говорит, что ты побеждён.", "Карлос Кастанеда"),
-            ("Страдание перестаёт быть страданием в тот момент, когда обретает смысл.", "Виктор Франкл"),
-            ("Человек способен изменить себя, и в этом его главная сила.", "Лев Толстой"),
-            ("Не тот велик, кто никогда не падал, а тот велик, кто падал и вставал.", "Конфуций"),
-            ("Здоровье — это то единственное, что по-настоящему нужно беречь.", "Антон Чехов"),
-            ("Душа исцеляется рядом с детьми.", "Фёдор Достоевский"),
-            ("Всё, что не убивает меня, делает меня сильнее.", "Фридрих Ницше"),
-            ("Жизнь — это десяти процентов то, что с тобой происходит, и девяноста процентов — как ты на это реагируешь.", "Чарльз Свиндолл"),
-            ("Спокойствие приносит здоровье.", "Талмуд"),
-            ("Терпение — основа всех добродетелей.", "Иоанн Златоуст"),
-            ("Только в темноте видно звёзды.", "Мартин Лютер Кинг"),
-            ("Здоровье души так же важно, как здоровье тела.", "Цицерон"),
-            ("Надежда — это сон бодрствующего.", "Аристотель"),
-            ("Сила в спокойствии.", "Лао-цзы"),
-            ("Жизнь прекрасна, если ею правильно пользоваться.", "Сенека"),
-            ("Смысл жизни в служении и в том, чтобы приносить пользу другим.", "Лев Толстой"),
-            ("Внутренняя свобода — это способность выбирать своё отношение к обстоятельствам.", "Виктор Франкл"),
-            ("Здоровье — главное сокровище.", "Публилий Сир"),
-            ("Терпение горько, но его плод сладок.", "Жан де Лабрюйер"),
-            ("Человек становится тем, о чём он думает.", "Марк Аврелий"),
-            ("Счастье приходит к тем, кто помогает другим.", "Альберт Швейцер"),
-            ("Дух укрепляется в испытаниях.", "Сенека"),
-            ("Жизнь даётся один раз, и хочется прожить её бодро.", "Антон Чехов"),
-            ("Вера в себя — первая ступень к успеху.", "Ральф Уолдо Эмерсон"),
-            ("Здоровье — это правильное соотношение духа и тела.", "Платон"),
-            ("Только тот достоин жизни и свободы, кто каждый день идёт за них на бой.", "Иоганн Вольфганг Гёте"),
-            ("Смысл жизни — в любви и в труде.", "Лев Толстой"),
-            ("Терпение — искусство надеяться.", "Вольтер"),
-            ("Сила не в мышцах, а в несгибаемой воле.", "Махатма Ганди"),
-            ("Жизнь — это череда выборов. Выбирай осознанно.", "Виктор Франкл"),
-            ("Здоровье духа важнее здоровья тела.", "Эпиктет"),
-            ("Надежда — лучший врач из всех, каких я знаю.", "Александр Дюма"),
-            ("Воля побеждает привычку.", "Марк Твен"),
-            ("Спокойствие — величайшее проявление силы.", "Брюс Ли"),
-            ("Жизнь коротка. Искусство вечно. Решение трудно.", "Гиппократ"),
-            ("Терпение — мать всех добродетелей.", "Св. Августин"),
-            ("Сила — в единстве тела и духа.", "Ювенал"),
-            ("Человек живёт, пока живёт его дух.", "Сенека"),
-            ("Надежда — якорь души.", "Еврипид"),
-            ("Воля к смыслу — главная движущая сила человека.", "Виктор Франкл"),
-            ("Жизнь — это не ожидание, что буря пройдёт; это умение танцевать под дождём.", "Вивиан Грин")
-        ]
-
-        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        let index = (dayOfYear - 1) % quotes.count
-        return quotes[index]
+    var todayQuote: DailyQuote {
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        return allQuotes[dayOfYear % allQuotes.count]
     }
 
     // MARK: - Календарь и расписание лекарств
@@ -253,10 +181,10 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $isShowingDoctorDateSheet) {
-            doctorAppointmentDateSheet
+            DoctorAppointmentSheet(userProfile: currentProfile)
         }
         .sheet(isPresented: $isShowingLabTestDateSheet) {
-            labTestDateSheet
+            LabTestSheet(userProfile: currentProfile)
         }
         .sheet(isPresented: $isShowingSettings) {
             if let profile = currentProfile {
@@ -446,8 +374,6 @@ struct HomeView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Button {
-                        doctorAppointmentDatePicker = Date()
-                        doctorAppointmentDoctorName = currentProfile?.nextDoctorName ?? ""
                         isShowingDoctorDateSheet = true
                     } label: {
                         Text("Добавить +")
@@ -463,8 +389,6 @@ struct HomeView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Button {
-                        doctorAppointmentDatePicker = Date()
-                        doctorAppointmentDoctorName = currentProfile?.nextDoctorName ?? ""
                         isShowingDoctorDateSheet = true
                     } label: {
                         Text("Обновить дату")
@@ -481,7 +405,7 @@ struct HomeView: View {
                         .font(.title2)
                     VStack(alignment: .leading, spacing: 4) {
                         if let name = doctorName, !name.isEmpty {
-                            Text("👨‍⚕️ \(name)")
+                            Text("\(name)")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -496,8 +420,6 @@ struct HomeView: View {
                     }
                     Spacer()
                     Button {
-                        doctorAppointmentDatePicker = appointment ?? Date()
-                        doctorAppointmentDoctorName = currentProfile?.nextDoctorName ?? ""
                         isShowingDoctorDateSheet = true
                     } label: {
                         Image(systemName: "pencil")
@@ -516,56 +438,6 @@ struct HomeView: View {
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
-    }
-
-    private var doctorAppointmentDateSheet: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("ФИО врача (опционально)")
-                        .font(.subheadline)
-                    TextField("Например: Иванов Иван Иванович", text: $doctorAppointmentDoctorName)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-                }
-                .padding(.horizontal, 2)
-
-                DatePicker(
-                    "Дата и время приёма",
-                    selection: $doctorAppointmentDatePicker,
-                    in: Date()...,
-                    displayedComponents: [.date, .hourAndMinute]
-                )
-                .environment(\.locale, Locale(identifier: "ru_RU"))
-                Spacer()
-            }
-            .padding(20)
-            .navigationTitle("Приём у врача")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        isShowingDoctorDateSheet = false
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                            let rawName = doctorAppointmentDoctorName.trimmingCharacters(in: .whitespacesAndNewlines)
-                            let date = doctorAppointmentDatePicker
-
-                            if rawName.isEmpty {
-                                currentProfile?.nextDoctorName = nil
-                            } else {
-                                currentProfile?.nextDoctorName = rawName
-                            }
-                            currentProfile?.nextDoctorAppointment = date
-                        try? modelContext.save()
-                        NotificationManager.shared.scheduleDoctorAppointmentNotification(date: date, doctorName: rawName.isEmpty ? nil : rawName)
-                        isShowingDoctorDateSheet = false
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - Сдача анализов
@@ -587,7 +459,6 @@ struct HomeView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Button {
-                        labTestDatePicker = Date()
                         isShowingLabTestDateSheet = true
                     } label: {
                         Text("Добавить +")
@@ -603,7 +474,6 @@ struct HomeView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Button {
-                        labTestDatePicker = Date()
                         isShowingLabTestDateSheet = true
                     } label: {
                         Text("Обновить дату")
@@ -633,7 +503,6 @@ struct HomeView: View {
                     }
                     Spacer()
                     Button {
-                        labTestDatePicker = labDate ?? Date()
                         isShowingLabTestDateSheet = true
                     } label: {
                         Image(systemName: "pencil")
@@ -654,39 +523,6 @@ struct HomeView: View {
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
     }
 
-    private var labTestDateSheet: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                DatePicker(
-                    "Дата и время сдачи анализов",
-                    selection: $labTestDatePicker,
-                    in: Date()...,
-                    displayedComponents: [.date, .hourAndMinute]
-                )
-                .environment(\.locale, Locale(identifier: "ru_RU"))
-                Spacer()
-            }
-            .padding(20)
-            .navigationTitle("Сдача анализов")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        isShowingLabTestDateSheet = false
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                        let date = labTestDatePicker
-                        currentProfile?.nextLabTest = date
-                        try? modelContext.save()
-                        NotificationManager.shared.scheduleLabTestNotification(date: date)
-                        isShowingLabTestDateSheet = false
-                    }
-                }
-            }
-        }
-    }
 
     private func nextIntakeCard(for group: (time: Date, medications: [Medication])) -> some View {
         let timeString = group.time.formatted(
@@ -784,9 +620,7 @@ struct HomeView: View {
     }
 
     private var quoteSection: some View {
-        let quote = dailyQuote
-
-        return VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Сегодняшняя мысль")
                 .font(.headline)
 
@@ -801,13 +635,14 @@ struct HomeView: View {
                         .font(.largeTitle)
                         .foregroundColor(.accentColor)
 
-                    Text(quote.text)
-                        .font(.body.italic())
+                    Text(todayQuote.text)
+                        .font(.body)
+                        .italic()
                         .foregroundStyle(.primary)
 
-                    if !quote.author.isEmpty {
-                        Text("— \(quote.author)")
-                            .font(.footnote)
+                    if let author = todayQuote.author {
+                        Text("— \(author)")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.top, 4)
                     }
