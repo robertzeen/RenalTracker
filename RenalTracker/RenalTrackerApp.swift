@@ -33,18 +33,26 @@ struct RenalTrackerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
-                    UNUserNotificationCenter.current().requestAuthorization(
+                .task {
+                    let center = UNUserNotificationCenter.current()
+                    let granted = try? await center.requestAuthorization(
                         options: [.alert, .sound, .badge]
-                    ) { granted, error in
-                        if let error {
-                            print("[Notifications] requestAuthorization error: \(error)")
-                        }
+                    )
+                    if let granted {
                         print("[Notifications] Authorization granted: \(granted)")
+                    } else {
+                        print("[Notifications] Authorization request failed")
                     }
-                    UNUserNotificationCenter.current().setBadgeCount(0) { error in
-                        if let error {
-                            print("[Notifications] setBadgeCount error: \(error)")
+                    await MainActor.run {
+                        center.setBadgeCount(0) { error in
+                            if let error {
+                                print("[Notifications] setBadgeCount error: \(error)")
+                            }
+                        }
+                    }
+                    if granted == true {
+                        await MainActor.run {
+                            NotificationManager.shared.updateNotifications()
                         }
                     }
                 }
