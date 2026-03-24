@@ -94,28 +94,24 @@ struct IndicatorsView: View {
         return paddedMin...paddedMax
     }
 
-    private var ruShortDateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMM"
-        return formatter
-    }
-
     var body: some View {
         NavigationStack {
-            List {
-                // Переключатель периода (действует на все графики)
-                Section {
+            ScrollView {
+                VStack(spacing: 16) {
                     Picker("Период", selection: $chartPeriod) {
                         ForEach(ChartPeriod.allCases, id: \.rawValue) { period in
                             Text(period.title).tag(period)
                         }
                     }
                     .pickerStyle(.segmented)
-                }
+                    .padding(.top, 4)
 
-                bloodPressureSection
-                weightSection
+                    bloodPressureCard
+                    pulseCard
+                    weightCard
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
             .navigationTitle("Показатели")
         }
@@ -129,140 +125,281 @@ struct IndicatorsView: View {
         }
     }
 
-    private var bloodPressureSection: some View {
-        Section {
-            // График давления
-            if recentBloodPressureChart.count < 2 {
-                Text("Недостаточно данных")
-                    .foregroundStyle(.secondary)
-            } else if let domain = bloodPressureYDomain {
-                Chart {
-                    ForEach(recentBloodPressureChart) { record in
-                        LineMark(
-                            x: .value("Дата", record.date),
-                            y: .value("Давление", record.systolic)
-                        )
-                        .foregroundStyle(by: .value("Показатель", "Сист."))
-
-                        PointMark(
-                            x: .value("Дата", record.date),
-                            y: .value("Давление", record.systolic)
-                        )
-                        .foregroundStyle(by: .value("Показатель", "Сист."))
-                        .symbolSize(64)
-
-                        LineMark(
-                            x: .value("Дата", record.date),
-                            y: .value("Давление", record.diastolic)
-                        )
-                        .foregroundStyle(by: .value("Показатель", "Диаст."))
-
-                        PointMark(
-                            x: .value("Дата", record.date),
-                            y: .value("Давление", record.diastolic)
-                        )
-                        .foregroundStyle(by: .value("Показатель", "Диаст."))
-                        .symbolSize(64)
-                    }
-                }
-                .chartYScale(domain: domain)
-                .chartForegroundStyleScale([
-                    "Сист.": .red,
-                    "Диаст.": .blue
-                ])
-                .chartLegend(.visible)
-                .chartXAxis(.hidden)
-                .frame(height: 140)
-            }
-
-            // График пульса
-            if recentBloodPressureChart.count < 2 {
-                Text("Недостаточно данных")
-                    .foregroundStyle(.secondary)
-            } else if let pulseDomain = pulseYDomain {
-                Chart {
-                    ForEach(recentBloodPressureChart) { record in
-                        LineMark(
-                            x: .value("Дата", record.date),
-                            y: .value("Пульс", record.pulse)
-                        )
-                        .foregroundStyle(.green)
-
-                        PointMark(
-                            x: .value("Дата", record.date),
-                            y: .value("Пульс", record.pulse)
-                        )
-                        .foregroundStyle(.green)
-                        .symbolSize(64)
-                    }
-                }
-                .chartYScale(domain: pulseDomain)
-                .chartYAxisLabel("Пульс (уд/мин)")
-                .chartXAxis(.hidden)
-                .frame(height: 140)
-            }
-
-            NavigationLink {
-                BloodPressureListView()
-            } label: {
-                Text("Все измерения →")
-            }
-        } header: {
+    private var bloodPressureCard: some View {
+        VStack(spacing: 0) {
             HStack {
-                Text("ДАВЛЕНИЕ И ПУЛЬС")
-                Spacer()
-                Button {
-                    isShowingAddBloodPressure = true
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .imageScale(.large)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ДАВЛЕНИЕ И ПУЛЬС")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    if let last = bloodPressureRecords.last {
+                        Text("Последнее: \(last.systolic)/\(last.diastolic), пульс \(last.pulse)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .accessibilityLabel("Добавить запись давления")
+                Spacer()
+                Button { isShowingAddBloodPressure = true } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.15))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.blue)
+                    }
+                }
             }
+            .padding(14)
+
+            Divider()
+
+            if recentBloodPressureChart.count < 2 {
+                Text("Недостаточно данных для графика")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(height: 80)
+            } else {
+                Chart {
+                    ForEach(recentBloodPressureChart) { record in
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Сист.", record.systolic),
+                            series: .value("Тип", "systolic")
+                        )
+                        .foregroundStyle(Color.red)
+                        .interpolationMethod(.catmullRom)
+
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Сист.", record.systolic)
+                        )
+                        .foregroundStyle(Color.red)
+                        .symbolSize(40)
+                    }
+
+                    ForEach(recentBloodPressureChart) { record in
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Диаст.", record.diastolic),
+                            series: .value("Тип", "diastolic")
+                        )
+                        .foregroundStyle(Color.blue)
+                        .interpolationMethod(.catmullRom)
+
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Диаст.", record.diastolic)
+                        )
+                        .foregroundStyle(Color.blue)
+                        .symbolSize(40)
+                    }
+                }
+                .chartYScale(domain: bloodPressureYDomain ?? 60...180)
+                .chartXAxis(.hidden)
+                .chartYAxis {
+                    AxisMarks(position: .trailing) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let val = value.as(Int.self) {
+                                Text("\(val)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 120)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 12)
+            }
+
+            Divider()
+
+            HStack {
+                HStack(spacing: 4) {
+                    Circle().fill(Color.red).frame(width: 8, height: 8)
+                    Text("Сист.").font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                HStack(spacing: 4) {
+                    Circle().fill(Color.blue).frame(width: 8, height: 8)
+                    Text("Диаст.").font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                Spacer()
+                NavigationLink {
+                    BloodPressureListView()
+                } label: {
+                    Text("Все измерения →")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.blue)
+                }
+            }
+            .padding(14)
         }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
     }
 
-    private var weightSection: some View {
-        Section {
-            if recentWeightChart.count < 2 {
-                Text("Недостаточно данных")
+    private var pulseCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ПУЛЬС")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    if let last = bloodPressureRecords.last {
+                        Text("Последнее: \(last.pulse) уд/мин")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+            }
+            .padding(14)
+
+            Divider()
+
+            if recentBloodPressureChart.count < 2 {
+                Text("Недостаточно данных для графика")
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
-            } else if let domain = weightYDomain {
+                    .frame(height: 80)
+            } else {
+                Chart {
+                    ForEach(recentBloodPressureChart) { record in
+                        LineMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Пульс", record.pulse)
+                        )
+                        .foregroundStyle(Color.green)
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+
+                        PointMark(
+                            x: .value("Дата", record.date),
+                            y: .value("Пульс", record.pulse)
+                        )
+                        .foregroundStyle(Color.green)
+                        .symbolSize(40)
+                    }
+                }
+                .chartYScale(domain: pulseYDomain ?? 40...120)
+                .chartXAxis(.hidden)
+                .chartYAxis {
+                    AxisMarks(position: .trailing) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let val = value.as(Int.self) {
+                                Text("\(val)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 120)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 12)
+            }
+        }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
+    }
+
+    private var weightCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ВЕС")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    if let last = weightRecords.last {
+                        let wVal = last.valueKg
+                        let wStr = wVal.truncatingRemainder(dividingBy: 1) == 0
+                            ? "\(Int(wVal))" : String(format: "%.1f", wVal)
+                        Text("Последнее: \(wStr) кг")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Button { isShowingAddWeight = true } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.15))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.blue)
+                    }
+                }
+            }
+            .padding(14)
+
+            Divider()
+
+            if recentWeightChart.count < 2 {
+                Text("Недостаточно данных для графика")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(height: 80)
+            } else {
                 Chart {
                     ForEach(recentWeightChart) { record in
                         LineMark(
                             x: .value("Дата", record.date),
                             y: .value("Вес", record.valueKg)
                         )
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+
                         PointMark(
                             x: .value("Дата", record.date),
                             y: .value("Вес", record.valueKg)
                         )
+                        .symbolSize(40)
                     }
                 }
-                .chartYScale(domain: domain)
+                .chartYScale(domain: weightYDomain ?? 40.0...120.0)
                 .chartXAxis(.hidden)
-                .frame(height: 140)
+                .chartYAxis {
+                    AxisMarks(position: .trailing) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let val = value.as(Double.self) {
+                                let s = val.truncatingRemainder(dividingBy: 1) == 0
+                                    ? "\(Int(val))" : String(format: "%.1f", val)
+                                Text(s)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 120)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 12)
             }
 
-            NavigationLink {
-                WeightListView()
-            } label: {
-                Text("Все измерения →")
-            }
-        } header: {
+            Divider()
+
             HStack {
-                Text("ВЕС")
                 Spacer()
-                Button {
-                    isShowingAddWeight = true
+                NavigationLink {
+                    WeightListView()
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .imageScale(.large)
+                    Text("Все измерения →")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.blue)
                 }
-                .accessibilityLabel("Добавить запись веса")
             }
+            .padding(14)
         }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
     }
 }
 
@@ -276,8 +413,6 @@ struct BloodPressureListView: View {
     private var records: [BloodPressure]
 
     @State private var recordToEdit: BloodPressure?
-    @State private var recordToDelete: BloodPressure?
-
     @State private var showExportDialog = false
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
@@ -300,13 +435,6 @@ struct BloodPressureListView: View {
         var cal = Calendar.current
         cal.locale = Locale(identifier: "ru_RU")
         return cal
-    }
-
-    private var monthFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "LLLL yyyy"
-        return formatter
     }
 
     private var groupedByMonth: [(date: Date, records: [BloodPressure])] {
@@ -334,31 +462,26 @@ struct BloodPressureListView: View {
             } else {
                 List {
                     ForEach(groupedByMonth, id: \.date) { group in
-                        Section(header: Text(monthFormatter.string(from: group.date).capitalized)) {
+                        Section {
                             ForEach(group.records) { record in
-                                Button {
-                                    recordToEdit = record
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("\(record.systolic)/\(record.diastolic) мм рт. ст., пульс \(record.pulse)")
-                                            .font(.body)
-                                        Text(DateFormatter.russianDateTime.string(from: record.date))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                bpRow(record)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(record)
+                                            try? modelContext.save()
+                                        } label: {
+                                            Image(systemName: "trash")
+                                        }
                                     }
-                                    .padding(.vertical, 4)
-                                }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        recordToDelete = record
-                                    } label: {
-                                        Label("Удалить", systemImage: "trash")
-                                    }
-                                }
                             }
+                        } header: {
+                            Text(DateFormatter.russianMonthYear.string(from: group.date).uppercased())
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
+                .listStyle(.insetGrouped)
             }
         }
         .navigationTitle("Давление и пульс")
@@ -374,36 +497,26 @@ struct BloodPressureListView: View {
                     }
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 if !records.isEmpty {
                     Button {
                         showExportDialog = true
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        ZStack {
+                            Circle()
+                                .fill(Color(.secondarySystemBackground))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .accessibilityLabel("Экспорт PDF")
                 }
             }
         }
         .sheet(item: $recordToEdit) { record in
             EditBloodPressureSheet(record: record)
                 .presentationDetents([.medium, .large])
-        }
-        .alert("Вы уверены, что хотите удалить запись?",
-               isPresented: Binding(
-                    get: { recordToDelete != nil },
-                    set: { newValue in
-                        if !newValue { recordToDelete = nil }
-                    }
-               )) {
-            Button("Отмена", role: .cancel) { }
-            Button("Удалить", role: .destructive) {
-                if let record = recordToDelete {
-                    modelContext.delete(record)
-                    try? modelContext.save()
-                }
-                recordToDelete = nil
-            }
         }
         .confirmationDialog("Экспорт PDF", isPresented: $showExportDialog, titleVisibility: .visible) {
             Button(ExportPeriod.days7.title) {
@@ -422,6 +535,31 @@ struct BloodPressureListView: View {
                 ShareSheet(activityItems: [url])
             }
         }
+    }
+
+    @ViewBuilder
+    private func bpRow(_ record: BloodPressure) -> some View {
+        Button {
+            recordToEdit = record
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("\(record.systolic)/\(record.diastolic) мм рт. ст., пульс \(record.pulse)")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                    Text(DateFormatter.russianDateTime.string(from: record.date))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - PDF Export
@@ -591,7 +729,31 @@ struct WeightListView: View {
     private var records: [Weight]
 
     @State private var recordToEdit: Weight?
-    @State private var recordToDelete: Weight?
+    @State private var showExportDialog = false
+    @State private var pdfURL: URL?
+    @State private var isSharePresented = false
+
+    private var calendar: Calendar {
+        var cal = Calendar.current
+        cal.locale = Locale(identifier: "ru_RU")
+        return cal
+    }
+
+    private var groupedByMonth: [(date: Date, records: [Weight])] {
+        let grouped = Dictionary(grouping: records) { record -> Date in
+            let comps = calendar.dateComponents([.year, .month], from: record.date)
+            return calendar.date(from: comps) ?? record.date
+        }
+        return grouped
+            .map { key, value in (date: key, records: value.sorted { $0.date > $1.date }) }
+            .sorted { $0.date > $1.date }
+    }
+
+    private func formattedWeight(_ value: Double) -> String {
+        value.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(value))"
+            : String(format: "%.1f", value)
+    }
 
     var body: some View {
         Group {
@@ -603,28 +765,27 @@ struct WeightListView: View {
                 )
             } else {
                 List {
-                    ForEach(records) { record in
-                        Button {
-                            recordToEdit = record
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(String(format: "%.1f кг", record.valueKg))
-                                    .font(.body)
-                                Text(DateFormatter.russianDateTime.string(from: record.date))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                    ForEach(groupedByMonth, id: \.date) { group in
+                        Section {
+                            ForEach(group.records) { record in
+                                weightRow(record)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(record)
+                                            try? modelContext.save()
+                                        } label: {
+                                            Image(systemName: "trash")
+                                        }
+                                    }
                             }
-                            .padding(.vertical, 4)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                recordToDelete = record
-                            } label: {
-                                Label("Удалить", systemImage: "trash")
-                            }
+                        } header: {
+                            Text(DateFormatter.russianMonthYear.string(from: group.date).uppercased())
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
+                .listStyle(.insetGrouped)
             }
         }
         .navigationTitle("Вес")
@@ -640,27 +801,120 @@ struct WeightListView: View {
                     }
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if !records.isEmpty {
+                    Button {
+                        showExportDialog = true
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color(.secondarySystemBackground))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
         }
         .sheet(item: $recordToEdit) { record in
             EditWeightSheet(record: record)
                 .presentationDetents([.medium, .large])
         }
-        .alert("Вы уверены, что хотите удалить запись?",
-               isPresented: Binding(
-                    get: { recordToDelete != nil },
-                    set: { newValue in
-                        if !newValue { recordToDelete = nil }
-                    }
-               )) {
+        .confirmationDialog("Экспорт PDF", isPresented: $showExportDialog, titleVisibility: .visible) {
+            Button("За 7 дней") { exportPDF(period: 7) }
+            Button("За 30 дней") { exportPDF(period: 30) }
+            Button("Все данные") { exportPDF(period: nil) }
             Button("Отмена", role: .cancel) { }
-            Button("Удалить", role: .destructive) {
-                if let record = recordToDelete {
-                    modelContext.delete(record)
-                    try? modelContext.save()
-                }
-                recordToDelete = nil
+        }
+        .sheet(isPresented: $isSharePresented) {
+            if let url = pdfURL {
+                ShareSheet(activityItems: [url])
             }
         }
+    }
+
+    @ViewBuilder
+    private func weightRow(_ record: Weight) -> some View {
+        Button {
+            recordToEdit = record
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("\(formattedWeight(record.valueKg)) кг")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                    Text(DateFormatter.russianDateTime.string(from: record.date))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @MainActor
+    private func exportPDF(period: Int?) {
+        let filtered: [Weight]
+        if let days = period {
+            let from = Date().addingTimeInterval(Double(-days) * 86400)
+            filtered = records.filter { $0.date >= from }
+        } else {
+            filtered = records
+        }
+        guard !filtered.isEmpty else { return }
+
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+
+        let data = renderer.pdfData { context in
+            context.beginPage()
+            let margin: CGFloat = 32
+            var y: CGFloat = margin
+
+            let titleAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 20, weight: .bold)]
+            let bodyAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12)]
+            let rowAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)]
+
+            ("Отчёт по весу" as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttrs)
+            y += 28
+            ("Сформировано: \(DateFormatter.russianDateTime.string(from: Date()))" as NSString)
+                .draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 20), withAttributes: bodyAttrs)
+            y += 32
+
+            let contentWidth = pageRect.width - 2 * margin
+            let dateWidth = contentWidth * 0.5
+            let valWidth = contentWidth * 0.5
+            let rowH: CGFloat = 16
+
+            ("Дата и время" as NSString).draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowH), withAttributes: [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)])
+            ("Вес (кг)" as NSString).draw(in: CGRect(x: margin + dateWidth, y: y, width: valWidth, height: rowH), withAttributes: [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)])
+            y += rowH + 2
+
+            for record in filtered.sorted(by: { $0.date > $1.date }) {
+                if y > pageRect.height - margin - 20 {
+                    context.beginPage()
+                    y = margin
+                }
+                (DateFormatter.russianDateTime.string(from: record.date) as NSString)
+                    .draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowH), withAttributes: rowAttrs)
+                (formattedWeight(record.valueKg) as NSString)
+                    .draw(in: CGRect(x: margin + dateWidth, y: y, width: valWidth, height: rowH), withAttributes: rowAttrs)
+                y += rowH
+            }
+        }
+
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("WeightReport-\(UUID().uuidString).pdf")
+        try? data.write(to: url)
+        pdfURL = url
+        isSharePresented = true
     }
 }
 
@@ -780,19 +1034,21 @@ private struct AddBloodPressureSheet: View {
     @State private var systolic: Int = 120
     @State private var diastolic: Int = 80
     @State private var pulse: Int = 70
-    @State private var date: Date = Date()
+    @State private var selectedDate: Date = Date()
+    @State private var showDatePicker = false
+
+    private let sysColor  = Color(red: 0.85, green: 0.25, blue: 0.25)
+    private let diaColor  = Color(red: 0.25, green: 0.45, blue: 0.85)
+    private let pulseColor = Color(red: 0.15, green: 0.65, blue: 0.35)
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Давление и пульс") {
-                    BPWheelPicker(systolic: $systolic, diastolic: $diastolic, pulse: $pulse)
+            ScrollView {
+                VStack(spacing: 12) {
+                    bpCard
+                    dateCard
                 }
-
-                Section("Дата и время") {
-                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
-                }
+                .padding(16)
             }
             .navigationTitle("Давление и пульс")
             .navigationBarTitleDisplayMode(.inline)
@@ -802,13 +1058,130 @@ private struct AddBloodPressureSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Сохранить") { save() }
+                        .fontWeight(.medium)
                 }
             }
         }
     }
 
+    private var bpCard: some View {
+        VStack(spacing: 0) {
+            Text("ДАВЛЕНИЕ И ПУЛЬС")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+
+            HStack {
+                Spacer()
+                Text("Сист.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(sysColor)
+                    .frame(width: 80, alignment: .center)
+                Text("/")
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+                Text("Диаст.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(diaColor)
+                    .frame(width: 80, alignment: .center)
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(sysColor)
+                    .padding(.horizontal, 8)
+                Text("Пульс")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(pulseColor)
+                    .frame(width: 80, alignment: .center)
+                Spacer()
+            }
+            .padding(.top, 12)
+            .padding(.bottom, 4)
+
+            HStack(spacing: 0) {
+                Spacer()
+                Picker("", selection: $systolic) {
+                    ForEach(60...250, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+
+                Text("/")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+
+                Picker("", selection: $diastolic) {
+                    ForEach(40...150, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(sysColor)
+                    .padding(.horizontal, 8)
+
+                Picker("", selection: $pulse) {
+                    ForEach(30...250, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+                Spacer()
+            }
+            .padding(.bottom, 14)
+        }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16)
+            .stroke(Color(.separator), lineWidth: 0.5))
+    }
+
+    private var dateCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("ДАТА И ВРЕМЯ")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Text(DateFormatter.russianDateTime.string(from: selectedDate))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                }
+                Spacer()
+                Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(14)
+            .contentShape(Rectangle())
+            .onTapGesture { showDatePicker.toggle() }
+
+            if showDatePicker {
+                Divider()
+                DatePicker("", selection: $selectedDate,
+                           in: ...Date(),
+                           displayedComponents: [.date, .hourAndMinute])
+                    .datePickerStyle(.graphical)
+                    .environment(\.locale, Locale(identifier: "ru_RU"))
+                    .padding(.horizontal, 8)
+                    .onChange(of: selectedDate) { _, _ in
+                        showDatePicker = false
+                    }
+            }
+        }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16)
+            .stroke(Color(.separator), lineWidth: 0.5))
+    }
+
     private func save() {
-        let record = BloodPressure(systolic: systolic, diastolic: diastolic, pulse: pulse, date: date)
+        let record = BloodPressure(systolic: systolic, diastolic: diastolic, pulse: pulse, date: selectedDate)
         modelContext.insert(record)
         try? modelContext.save()
         dismiss()
@@ -826,27 +1199,29 @@ private struct EditBloodPressureSheet: View {
     @State private var systolic: Int
     @State private var diastolic: Int
     @State private var pulse: Int
-    @State private var date: Date
+    @State private var selectedDate: Date
+    @State private var showDatePicker = false
+
+    private let sysColor   = Color(red: 0.85, green: 0.25, blue: 0.25)
+    private let diaColor   = Color(red: 0.25, green: 0.45, blue: 0.85)
+    private let pulseColor = Color(red: 0.15, green: 0.65, blue: 0.35)
 
     init(record: BloodPressure) {
         self.record = record
         _systolic = State(initialValue: max(60, min(250, record.systolic)))
         _diastolic = State(initialValue: max(40, min(150, record.diastolic)))
         _pulse = State(initialValue: max(30, min(250, record.pulse)))
-        _date = State(initialValue: record.date)
+        _selectedDate = State(initialValue: record.date)
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Давление и пульс") {
-                    BPWheelPicker(systolic: $systolic, diastolic: $diastolic, pulse: $pulse)
+            ScrollView {
+                VStack(spacing: 12) {
+                    bpCard
+                    dateCard
                 }
-
-                Section("Дата и время") {
-                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
-                }
+                .padding(16)
             }
             .navigationTitle("Редактирование")
             .navigationBarTitleDisplayMode(.inline)
@@ -855,17 +1230,134 @@ private struct EditBloodPressureSheet: View {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить изменения") { save() }
+                    Button("Сохранить") { save() }
+                        .fontWeight(.medium)
                 }
             }
         }
+    }
+
+    private var bpCard: some View {
+        VStack(spacing: 0) {
+            Text("ДАВЛЕНИЕ И ПУЛЬС")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+
+            HStack {
+                Spacer()
+                Text("Сист.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(sysColor)
+                    .frame(width: 80, alignment: .center)
+                Text("/")
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+                Text("Диаст.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(diaColor)
+                    .frame(width: 80, alignment: .center)
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(sysColor)
+                    .padding(.horizontal, 8)
+                Text("Пульс")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(pulseColor)
+                    .frame(width: 80, alignment: .center)
+                Spacer()
+            }
+            .padding(.top, 12)
+            .padding(.bottom, 4)
+
+            HStack(spacing: 0) {
+                Spacer()
+                Picker("", selection: $systolic) {
+                    ForEach(60...250, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+
+                Text("/")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+
+                Picker("", selection: $diastolic) {
+                    ForEach(40...150, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(sysColor)
+                    .padding(.horizontal, 8)
+
+                Picker("", selection: $pulse) {
+                    ForEach(30...250, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 120)
+                .clipped()
+                Spacer()
+            }
+            .padding(.bottom, 14)
+        }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16)
+            .stroke(Color(.separator), lineWidth: 0.5))
+    }
+
+    private var dateCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("ДАТА И ВРЕМЯ")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Text(DateFormatter.russianDateTime.string(from: selectedDate))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                }
+                Spacer()
+                Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(14)
+            .contentShape(Rectangle())
+            .onTapGesture { showDatePicker.toggle() }
+
+            if showDatePicker {
+                Divider()
+                DatePicker("", selection: $selectedDate,
+                           in: ...Date(),
+                           displayedComponents: [.date, .hourAndMinute])
+                    .datePickerStyle(.graphical)
+                    .environment(\.locale, Locale(identifier: "ru_RU"))
+                    .padding(.horizontal, 8)
+                    .onChange(of: selectedDate) { _, _ in
+                        showDatePicker = false
+                    }
+            }
+        }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16)
+            .stroke(Color(.separator), lineWidth: 0.5))
     }
 
     private func save() {
         record.systolic = systolic
         record.diastolic = diastolic
         record.pulse = pulse
-        record.date = date
+        record.date = selectedDate
         try? modelContext.save()
         dismiss()
     }
@@ -937,19 +1429,97 @@ private struct AddWeightSheet: View {
 
     @State private var kilograms: Int = 80
     @State private var decimalPart: Int = 0
-    @State private var date: Date = Date()
+    @State private var selectedDate: Date = Date()
+    @State private var showDatePicker = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Вес") {
-                    WeightWheelPicker(kilograms: $kilograms, decimalPart: $decimalPart)
-                }
+            ScrollView {
+                VStack(spacing: 12) {
+                    VStack(spacing: 0) {
+                        Text("ВЕС")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+                            .padding(.bottom, 8)
 
-                Section("Дата и время") {
-                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Picker("", selection: $kilograms) {
+                                ForEach(20...250, id: \.self) { v in
+                                    Text("\(v)").tag(v)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(width: 100, height: 120)
+                            .clipped()
+
+                            Text(",")
+                                .font(.title)
+                                .padding(.horizontal, 4)
+
+                            Picker("", selection: $decimalPart) {
+                                ForEach(0...9, id: \.self) { v in
+                                    Text("\(v)").tag(v)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(width: 80, height: 120)
+                            .clipped()
+
+                            Text("кг")
+                                .font(.system(size: 17))
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, 8)
+                            Spacer()
+                        }
+                        .padding(.bottom, 14)
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("ДАТА И ВРЕМЯ")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Text(DateFormatter.russianDateTime.string(from: selectedDate))
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.primary)
+                            }
+                            Spacer()
+                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showDatePicker.toggle() }
+
+                        if showDatePicker {
+                            Divider()
+                            DatePicker("", selection: $selectedDate,
+                                       in: ...Date(),
+                                       displayedComponents: [.date, .hourAndMinute])
+                                .datePickerStyle(.graphical)
+                                .environment(\.locale, Locale(identifier: "ru_RU"))
+                                .padding(.horizontal, 8)
+                                .onChange(of: selectedDate) { _, _ in
+                                    showDatePicker = false
+                                }
+                        }
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
                 }
+                .padding(16)
             }
             .navigationTitle("Новая запись веса")
             .navigationBarTitleDisplayMode(.inline)
@@ -959,6 +1529,7 @@ private struct AddWeightSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Сохранить") { save() }
+                        .fontWeight(.medium)
                 }
             }
         }
@@ -966,7 +1537,7 @@ private struct AddWeightSheet: View {
 
     private func save() {
         let value = Double(kilograms) + Double(decimalPart) / 10.0
-        let record = Weight(valueKg: value, date: date)
+        let record = Weight(valueKg: value, date: selectedDate)
         modelContext.insert(record)
         try? modelContext.save()
         dismiss()
@@ -983,7 +1554,8 @@ private struct EditWeightSheet: View {
 
     @State private var kilograms: Int
     @State private var decimalPart: Int
-    @State private var date: Date
+    @State private var selectedDate: Date
+    @State private var showDatePicker = false
 
     init(record: Weight) {
         self.record = record
@@ -991,20 +1563,97 @@ private struct EditWeightSheet: View {
         let dec = Int((record.valueKg * 10).truncatingRemainder(dividingBy: 10))
         _kilograms = State(initialValue: max(20, min(250, kg)))
         _decimalPart = State(initialValue: max(0, min(9, dec)))
-        _date = State(initialValue: record.date)
+        _selectedDate = State(initialValue: record.date)
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Вес") {
-                    WeightWheelPicker(kilograms: $kilograms, decimalPart: $decimalPart)
-                }
+            ScrollView {
+                VStack(spacing: 12) {
+                    VStack(spacing: 0) {
+                        Text("ВЕС")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+                            .padding(.bottom, 8)
 
-                Section("Дата и время") {
-                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Picker("", selection: $kilograms) {
+                                ForEach(20...250, id: \.self) { v in
+                                    Text("\(v)").tag(v)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(width: 100, height: 120)
+                            .clipped()
+
+                            Text(",")
+                                .font(.title)
+                                .padding(.horizontal, 4)
+
+                            Picker("", selection: $decimalPart) {
+                                ForEach(0...9, id: \.self) { v in
+                                    Text("\(v)").tag(v)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(width: 80, height: 120)
+                            .clipped()
+
+                            Text("кг")
+                                .font(.system(size: 17))
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, 8)
+                            Spacer()
+                        }
+                        .padding(.bottom, 14)
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("ДАТА И ВРЕМЯ")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Text(DateFormatter.russianDateTime.string(from: selectedDate))
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.primary)
+                            }
+                            Spacer()
+                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showDatePicker.toggle() }
+
+                        if showDatePicker {
+                            Divider()
+                            DatePicker("", selection: $selectedDate,
+                                       in: ...Date(),
+                                       displayedComponents: [.date, .hourAndMinute])
+                                .datePickerStyle(.graphical)
+                                .environment(\.locale, Locale(identifier: "ru_RU"))
+                                .padding(.horizontal, 8)
+                                .onChange(of: selectedDate) { _, _ in
+                                    showDatePicker = false
+                                }
+                        }
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
                 }
+                .padding(16)
             }
             .navigationTitle("Редактирование")
             .navigationBarTitleDisplayMode(.inline)
@@ -1013,7 +1662,8 @@ private struct EditWeightSheet: View {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить изменения") { save() }
+                    Button("Сохранить") { save() }
+                        .fontWeight(.medium)
                 }
             }
         }
@@ -1021,7 +1671,7 @@ private struct EditWeightSheet: View {
 
     private func save() {
         record.valueKg = Double(kilograms) + Double(decimalPart) / 10.0
-        record.date = date
+        record.date = selectedDate
         try? modelContext.save()
         dismiss()
     }

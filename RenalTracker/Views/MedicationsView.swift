@@ -204,6 +204,7 @@ struct MedicationsView: View {
                                         )
                                             .font(.title3)
                                             .fontWeight(.semibold)
+                                            .foregroundStyle(.primary)
                                         if group.medications.allSatisfy({ intakeForToday(medication: $0)?.isTaken == true }) {
                                             Image(systemName: "checkmark.circle.fill")
                                                 .foregroundColor(.green)

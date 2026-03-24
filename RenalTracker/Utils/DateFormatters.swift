@@ -26,5 +26,12 @@ extension DateFormatter {
         f.dateFormat = "HH:mm"
         return f
     }()
+
+    static let russianMonthYear: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ru_RU")
+        f.dateFormat = "LLLL yyyy"
+        return f
+    }()
 }
 

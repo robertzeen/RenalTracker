@@ -11,6 +11,7 @@ struct DoctorVisitsView: View {
     @Query(sort: \DoctorVisit.date, order: .reverse) private var visits: [DoctorVisit]
 
     @State private var isShowingAddVisit = false
+    @State private var visitToEdit: DoctorVisit? = nil
 
     // MARK: - Группировка по месяцу
 
@@ -33,10 +34,7 @@ struct DoctorVisitsView: View {
     }
 
     private func sectionTitle(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "LLLL yyyy"
-        return formatter.string(from: date).uppercased()
+        DateFormatter.russianMonthYear.string(from: date).uppercased()
     }
 
     // MARK: - Body
@@ -47,18 +45,28 @@ struct DoctorVisitsView: View {
                 if visits.isEmpty {
                     emptyState
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 20, pinnedViews: []) {
-                            ForEach(groupedByMonth, id: \.date) { group in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    sectionHeader(for: group.date)
-                                    monthCard(visits: group.visits)
+                    List {
+                        ForEach(groupedByMonth, id: \.date) { group in
+                            Section {
+                                ForEach(group.visits) { visit in
+                                    visitRow(visit)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                            Button(role: .destructive) {
+                                                modelContext.delete(visit)
+                                                try? modelContext.save()
+                                            } label: {
+                                                Image(systemName: "trash")
+                                            }
+                                        }
                                 }
-                                .padding(.horizontal, 16)
+                            } header: {
+                                Text(sectionTitle(for: group.date))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
                             }
                         }
-                        .padding(.vertical, 16)
                     }
+                    .listStyle(.insetGrouped)
                 }
             }
             .navigationTitle("Приёмы у врача")
@@ -82,86 +90,63 @@ struct DoctorVisitsView: View {
         .sheet(isPresented: $isShowingAddVisit) {
             AddDoctorVisitView()
         }
-    }
-
-    // MARK: - Компоненты
-
-    private func sectionHeader(for date: Date) -> some View {
-        Text(sectionTitle(for: date))
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.secondary)
-            .tracking(1)
-            .padding(.leading, 4)
-            .padding(.bottom, 4)
-    }
-
-    private func monthCard(visits visitsInMonth: [DoctorVisit]) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(visitsInMonth.enumerated()), id: \.element.id) { index, visit in
-                NavigationLink(destination: AddDoctorVisitView(existingVisit: visit)) {
-                    HStack(alignment: .top, spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.12))
-                                .frame(width: 36, height: 36)
-                            Text("👩‍⚕️")
-                                .font(.system(size: 16))
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(visit.doctorName ?? "Без врача")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.primary)
-
-                            Text(DateFormatter.russianDateTime.string(from: visit.date))
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
-
-                            if let notes = visit.notes, !notes.isEmpty {
-                                Text(notes)
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                                    .padding(.top, 2)
-                            } else {
-                                Text("Заметок нет")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(.tertiary)
-                                    .italic()
-                            }
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(14)
-                }
-                .buttonStyle(.plain)
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        modelContext.delete(visit)
-                        try? modelContext.save()
-                    } label: {
-                        Label("Удалить", systemImage: "trash")
-                    }
-                }
-
-                if index < visitsInMonth.count - 1 {
-                    Divider()
-                        .padding(.leading, 62)
-                }
-            }
+        .sheet(item: $visitToEdit) { visit in
+            AddDoctorVisitView(existingVisit: visit)
         }
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color(.separator), lineWidth: 0.5)
-        )
     }
+
+    // MARK: - Строка записи
+
+    @ViewBuilder
+    private func visitRow(_ visit: DoctorVisit) -> some View {
+        Button {
+            visitToEdit = visit
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Text("👩‍⚕️")
+                        .font(.callout)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(visit.doctorName ?? "Без врача")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+
+                    Text(DateFormatter.russianDateTime.string(from: visit.date))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if let notes = visit.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .padding(.top, 2)
+                    } else {
+                        Text("Заметок нет")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.tertiary)
+                            .italic()
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Пустой экран
 
     private var emptyState: some View {
         VStack(spacing: 16) {

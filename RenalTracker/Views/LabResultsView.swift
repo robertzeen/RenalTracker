@@ -370,6 +370,15 @@ struct LabResultsView: View {
         root.present(av, animated: true)
     }
 
+    private func formattedValue(_ result: LabResult, unit: String) -> String {
+        let value = result.value
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(value)) \(unit)".trimmingCharacters(in: .whitespaces)
+        } else {
+            return "\(value) \(unit)".trimmingCharacters(in: .whitespaces)
+        }
+    }
+
     var body: some View {
         ZStack {
             NavigationStack {
@@ -393,68 +402,90 @@ struct LabResultsView: View {
                         }
                         .padding()
                     } else {
-                        List {
-                            Section {
-                                ForEach(sortedTests) { test in
-                                    Button {
-                                        selectedTestForDetails = test
-                                    } label: {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(test.name)
-                                                    .font(.headline)
-                                                if let last = test.results.sorted(by: { $0.date > $1.date }).first {
-                                                    Text("\(String(format: "%.2f", last.value)) \(test.unit)")
-                                                        .font(.subheadline)
-                                                    Text(DateFormatter.russianDateTime.string(from: last.date))
-                                                        .font(.caption)
-                                                        .foregroundStyle(.secondary)
-                                                } else {
-                                                    Text("Нет данных")
-                                                        .font(.subheadline)
-                                                        .foregroundStyle(.secondary)
-                                                }
-                                            }
-                                            Spacer()
-                                            Image(systemName: "chevron.right")
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                        .padding(.vertical, 4)
-                                    }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button(role: .destructive) {
-                                            testToDelete = test
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text("ОТСЛЕЖИВАЕМЫЕ АНАЛИЗЫ")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 4)
+                                    .padding(.bottom, 4)
+
+                                VStack(spacing: 0) {
+                                    ForEach(Array(sortedTests.enumerated()), id: \.element.id) { index, test in
+                                        Button {
+                                            selectedTestForDetails = test
                                         } label: {
-                                            Label("Удалить", systemImage: "trash")
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 3) {
+                                                    Text(test.name)
+                                                        .font(.headline)
+
+                                                    if let latest = test.results.sorted(by: { $0.date > $1.date }).first {
+                                                        Text("\(formattedValue(latest, unit: test.unit)) · \(DateFormatter.russianDate.string(from: latest.date))")
+                                                            .font(.system(size: 13))
+                                                            .foregroundStyle(.secondary)
+                                                    }
+                                                }
+                                                Spacer()
+                                                Image(systemName: "chevron.right")
+                                                    .font(.system(size: 12))
+                                                    .foregroundStyle(.tertiary)
+                                            }
+                                            .padding(14)
+                                            .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                            Button(role: .destructive) {
+                                                testToDelete = test
+                                            } label: {
+                                                Image(systemName: "trash")
+                                            }
+                                        }
+
+                                        if index < sortedTests.count - 1 {
+                                            Divider()
+                                                .padding(.leading, 14)
                                         }
                                     }
                                 }
-                            } header: {
-                                HStack {
-                                    Text("Отслеживаемые анализы")
-                                    Spacer()
-                                    Button {
-                                        isShowingAddTrackedTest = true
-                                    } label: {
-                                        Image(systemName: "plus.circle.fill")
-                                            .imageScale(.large)
-                                    }
-                                    .accessibilityLabel("Добавить отслеживаемый анализ")
-                                }
+                                .background(Color(.secondarySystemBackground))
+                                .cornerRadius(16)
+                                .overlay(RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color(.separator), lineWidth: 0.5))
                             }
+                            .padding(16)
                         }
                     }
                 }
                 .navigationTitle("Анализы")
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        if !trackedTests.isEmpty {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        HStack(spacing: 8) {
                             Button {
                                 isShowingExportDialog = true
                             } label: {
-                                Image(systemName: "square.and.arrow.up")
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(.secondarySystemBackground))
+                                        .frame(width: 32, height: 32)
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
                             }
-                            .accessibilityLabel("Экспорт анализов")
+                            Button {
+                                isShowingAddTrackedTest = true
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.blue.opacity(0.15))
+                                        .frame(width: 32, height: 32)
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(.blue)
+                                }
+                            }
                         }
                     }
                 }
@@ -728,6 +759,15 @@ private struct LabTestDetailView: View, Identifiable {
         test.results.sorted { $0.date < $1.date }
     }
 
+    private func formattedValue(_ result: LabResult) -> String {
+        let value = result.value
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(value)) \(test.unit)".trimmingCharacters(in: .whitespaces)
+        } else {
+            return "\(value) \(test.unit)".trimmingCharacters(in: .whitespaces)
+        }
+    }
+
     private var chartYDomain: ClosedRange<Double>? {
         guard !sortedResults.isEmpty else { return nil }
         let values = sortedResults.map { $0.value }
@@ -740,7 +780,7 @@ private struct LabTestDetailView: View, Identifiable {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
+            Group {
                 if sortedResults.isEmpty {
                     ContentUnavailableView(
                         "Нет данных по анализу",
@@ -748,13 +788,8 @@ private struct LabTestDetailView: View, Identifiable {
                         description: Text("Добавьте первое значение для анализа \"\(test.name)\".")
                     )
                 } else {
-                    let ruFormatter: DateFormatter = {
-                        let f = DateFormatter()
-                        f.locale = Locale(identifier: "ru_RU")
-                        f.dateFormat = "d MMM"
-                        return f
-                    }()
-
+                    ScrollView {
+                        VStack(spacing: 16) {
                     if let domain = chartYDomain {
                         Chart {
                             ForEach(sortedResults) { result in
@@ -769,18 +804,7 @@ private struct LabTestDetailView: View, Identifiable {
                             }
                         }
                         .chartYScale(domain: domain)
-                        .chartXAxis {
-                            AxisMarks(values: .automatic) { value in
-                                if let date = value.as(Date.self) {
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel {
-                                        Text(ruFormatter.string(from: date))
-                                    }
-                                }
-                            }
-                        }
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                        .chartXAxis(.hidden)
                         .frame(height: 220)
                         .padding(.horizontal)
                     } else {
@@ -792,45 +816,54 @@ private struct LabTestDetailView: View, Identifiable {
                                 )
                             }
                         }
-                        .chartXAxis {
-                            AxisMarks(values: .automatic) { value in
-                                if let date = value.as(Date.self) {
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel {
-                                        Text(ruFormatter.string(from: date))
-                                    }
-                                }
-                            }
-                        }
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                        .chartXAxis(.hidden)
                         .frame(height: 220)
                         .padding(.horizontal)
                     }
 
-                    List {
-                        ForEach(sortedResults.reversed()) { result in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\(String(format: "%.2f", result.value)) \(test.unit)")
-                                    .font(.body)
-                                Text(DateFormatter.russianDateTime.string(from: result.date))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                    let reversedResults = Array(sortedResults.reversed())
+                    VStack(spacing: 0) {
+                        ForEach(Array(reversedResults.enumerated()), id: \.element.id) { index, result in
+                            Button {
+                                resultToEdit = result
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(formattedValue(result))
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundStyle(.primary)
+                                        Text(DateFormatter.russianDateTime.string(from: result.date))
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .padding(14)
+                                .contentShape(Rectangle())
                             }
-                            .padding(.vertical, 4)
+                            .buttonStyle(.plain)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
                                     resultToDelete = result
                                 } label: {
-                                    Label("Удалить", systemImage: "trash")
-                                }
-
-                                Button {
-                                    resultToEdit = result
-                                } label: {
-                                    Label("Изменить", systemImage: "pencil")
+                                    Image(systemName: "trash")
                                 }
                             }
+
+                            if index < reversedResults.count - 1 {
+                                Divider().padding(.leading, 14)
+                            }
+                        }
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
                         }
                     }
                 }
@@ -840,30 +873,46 @@ private struct LabTestDetailView: View, Identifiable {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Закрыть") { dismiss() }
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        isShowingAddResult = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Добавить значение анализа")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isShowingEditReferences = true
-                    } label: {
-                        Image(systemName: "slider.horizontal.3")
-                    }
-                    .accessibilityLabel("Редактировать референсные значения")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if !sortedResults.isEmpty {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 8) {
                         Button {
-                            exportPDF()
+                            isShowingEditReferences = true
                         } label: {
-                            Image(systemName: "square.and.arrow.up")
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.secondarySystemBackground))
+                                    .frame(width: 32, height: 32)
+                                Image(systemName: "slider.horizontal.3")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
-                        .accessibilityLabel("Экспорт в PDF")
+                        if !sortedResults.isEmpty {
+                            Button {
+                                exportPDF()
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(.secondarySystemBackground))
+                                        .frame(width: 32, height: 32)
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        Button {
+                            isShowingAddResult = true
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.blue.opacity(0.15))
+                                    .frame(width: 32, height: 32)
+                                Image(systemName: "plus")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(.blue)
+                            }
+                        }
                     }
                 }
             }
@@ -1035,31 +1084,92 @@ private struct AddLabResultSheet: View {
     let test: TrackedLabTest
 
     @State private var valueText: String = ""
-    @State private var date: Date = Date()
+    @State private var selectedDate: Date = Date()
+    @State private var showDatePicker = false
+
+    private var isValid: Bool {
+        Double(valueText.replacingOccurrences(of: ",", with: ".")) != nil
+    }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section(test.name) {
-                    TextField("Значение (\(test.unit))", text: $valueText)
-                        .keyboardType(.decimalPad)
-                }
+            ScrollView {
+                VStack(spacing: 12) {
+                    VStack(spacing: 0) {
+                        Text(test.name.uppercased())
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+                            .padding(.bottom, 8)
 
-                Section("Дата") {
-                    DatePicker("Дата", selection: $date, displayedComponents: .date)
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                        Divider().padding(.leading, 14)
+
+                        HStack {
+                            TextField("Значение", text: $valueText)
+                                .font(.system(size: 15, weight: .medium))
+                                .keyboardType(.decimalPad)
+                            Text(test.unit)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("ДАТА И ВРЕМЯ")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Text(DateFormatter.russianDateTime.string(from: selectedDate))
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.primary)
+                            }
+                            Spacer()
+                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showDatePicker.toggle() }
+
+                        if showDatePicker {
+                            Divider()
+                            DatePicker("", selection: $selectedDate,
+                                       in: ...Date(),
+                                       displayedComponents: [.date, .hourAndMinute])
+                                .datePickerStyle(.graphical)
+                                .environment(\.locale, Locale(identifier: "ru_RU"))
+                                .padding(.horizontal, 8)
+                                .onChange(of: selectedDate) { _, _ in
+                                    showDatePicker = false
+                                }
+                        }
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
                 }
+                .padding(16)
             }
             .navigationTitle("Новое значение")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить") {
-                        save()
-                    }
-                    .disabled(Double(valueText.replacingOccurrences(of: ",", with: ".")) == nil)
+                    Button("Сохранить") { save() }
+                        .fontWeight(.medium)
+                        .disabled(!isValid)
                 }
             }
         }
@@ -1073,7 +1183,7 @@ private struct AddLabResultSheet: View {
             name: test.name,
             value: value,
             unit: test.unit,
-            date: date,
+            date: selectedDate,
             trackedTest: test
         )
         modelContext.insert(result)
@@ -1093,37 +1203,101 @@ private struct EditLabResultSheet: View {
     let result: LabResult
 
     @State private var valueText: String
-    @State private var date: Date
+    @State private var selectedDate: Date
+    @State private var showDatePicker = false
 
     init(result: LabResult) {
         self.result = result
-        _valueText = State(initialValue: String(result.value))
-        _date = State(initialValue: result.date)
+        let v = result.value
+        let formatted = v.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(v))" : "\(v)"
+        _valueText = State(initialValue: formatted)
+        _selectedDate = State(initialValue: result.date)
+    }
+
+    private var isValid: Bool {
+        Double(valueText.replacingOccurrences(of: ",", with: ".")) != nil
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section(result.name) {
-                    TextField("Значение (\(result.unit))", text: $valueText)
-                        .keyboardType(.decimalPad)
-                }
+            ScrollView {
+                VStack(spacing: 12) {
+                    VStack(spacing: 0) {
+                        Text(result.name.uppercased())
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+                            .padding(.bottom, 8)
 
-                Section("Дата и время") {
-                    DatePicker("Дата и время", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                        .environment(\.locale, Locale(identifier: "ru_RU"))
+                        Divider().padding(.leading, 14)
+
+                        HStack {
+                            TextField("Значение", text: $valueText)
+                                .font(.system(size: 15, weight: .medium))
+                                .keyboardType(.decimalPad)
+                            Text(result.unit)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("ДАТА И ВРЕМЯ")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Text(DateFormatter.russianDateTime.string(from: selectedDate))
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.primary)
+                            }
+                            Spacer()
+                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showDatePicker.toggle() }
+
+                        if showDatePicker {
+                            Divider()
+                            DatePicker("", selection: $selectedDate,
+                                       in: ...Date(),
+                                       displayedComponents: [.date, .hourAndMinute])
+                                .datePickerStyle(.graphical)
+                                .environment(\.locale, Locale(identifier: "ru_RU"))
+                                .padding(.horizontal, 8)
+                                .onChange(of: selectedDate) { _, _ in
+                                    showDatePicker = false
+                                }
+                        }
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.separator), lineWidth: 0.5))
                 }
+                .padding(16)
             }
             .navigationTitle("Редактирование")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить изменения") {
-                        save()
-                    }
-                    .disabled(Double(valueText.replacingOccurrences(of: ",", with: ".")) == nil)
+                    Button("Сохранить") { save() }
+                        .fontWeight(.medium)
+                        .disabled(!isValid)
                 }
             }
         }
@@ -1134,7 +1308,7 @@ private struct EditLabResultSheet: View {
         guard let value = Double(normalized) else { return }
 
         result.value = value
-        result.date = date
+        result.date = selectedDate
 
         try? modelContext.save()
         dismiss()
