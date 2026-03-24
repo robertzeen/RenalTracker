@@ -79,7 +79,7 @@ struct LabTestDetailView: View, Identifiable {
                             }
 
                             let reversedResults = Array(sortedResults.reversed())
-                            VStack(spacing: 0) {
+                            LazyVStack(spacing: 0) {
                                 ForEach(Array(reversedResults.enumerated()), id: \.element.id) { index, result in
                                     Button {
                                         resultToEdit = result
