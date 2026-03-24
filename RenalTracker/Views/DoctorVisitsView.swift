@@ -27,9 +27,7 @@ struct DoctorVisitsView: View {
             return calendar.date(from: comps) ?? visit.date
         }
         return grouped
-            .map { key, value in
-                (date: key, visits: value.sorted { $0.date > $1.date })
-            }
+            .map { key, value in (date: key, visits: value) }
             .sorted { $0.date > $1.date }
     }
 

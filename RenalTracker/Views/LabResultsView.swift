@@ -44,7 +44,7 @@ struct LabResultsView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Query private var profiles: [UserProfile]
-    @Query(sort: \TrackedLabTest.createdAt, order: .forward)
+    @Query(sort: \TrackedLabTest.name, order: .forward)
     private var trackedTests: [TrackedLabTest]
 
     @State private var isShowingAddTrackedTest = false

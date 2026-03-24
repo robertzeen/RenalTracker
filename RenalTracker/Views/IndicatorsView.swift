@@ -21,10 +21,10 @@ enum ChartPeriod: String, CaseIterable {
 struct IndicatorsView: View {
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: \BloodPressure.date, order: .forward)
+    @Query(sort: \BloodPressure.date, order: .reverse)
     private var bloodPressureRecords: [BloodPressure]
 
-    @Query(sort: \Weight.date, order: .forward)
+    @Query(sort: \Weight.date, order: .reverse)
     private var weightRecords: [Weight]
 
     @State private var chartPeriod: ChartPeriod = .days7
@@ -132,7 +132,7 @@ struct IndicatorsView: View {
                     Text("ДАВЛЕНИЕ И ПУЛЬС")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
-                    if let last = bloodPressureRecords.last {
+                    if let last = bloodPressureRecords.first {
                         Text("Последнее: \(last.systolic)/\(last.diastolic), пульс \(last.pulse)")
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
@@ -248,7 +248,7 @@ struct IndicatorsView: View {
                     Text("ПУЛЬС")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
-                    if let last = bloodPressureRecords.last {
+                    if let last = bloodPressureRecords.first {
                         Text("Последнее: \(last.pulse) уд/мин")
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
@@ -315,7 +315,7 @@ struct IndicatorsView: View {
                     Text("ВЕС")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
-                    if let last = weightRecords.last {
+                    if let last = weightRecords.first {
                         let wVal = last.valueKg
                         let wStr = wVal.truncatingRemainder(dividingBy: 1) == 0
                             ? "\(Int(wVal))" : String(format: "%.1f", wVal)
@@ -446,10 +446,7 @@ struct BloodPressureListView: View {
         }
 
         return grouped
-            .map { (key, value) in
-                let sorted = value.sorted { $0.date > $1.date }
-                return (date: key, records: sorted)
-            }
+            .map { (key, value) in (date: key, records: value) }
             .sorted { $0.date > $1.date }
     }
 
@@ -674,7 +671,7 @@ struct BloodPressureListView: View {
             let dateFormatter = DateFormatter.russianDate
             let timeFormatter = DateFormatter.russianTime
 
-            for record in records.sorted(by: { $0.date > $1.date }) {
+            for record in records {
                 if y > pageRect.height - margin - 80 {
                     context.beginPage()
                     y = margin
@@ -761,7 +758,7 @@ struct WeightListView: View {
             return calendar.date(from: comps) ?? record.date
         }
         return grouped
-            .map { key, value in (date: key, records: value.sorted { $0.date > $1.date }) }
+            .map { key, value in (date: key, records: value) }
             .sorted { $0.date > $1.date }
     }
 
@@ -926,7 +923,7 @@ struct WeightListView: View {
             ("Вес (кг)" as NSString).draw(in: CGRect(x: margin + dateWidth, y: y, width: valWidth, height: rowH), withAttributes: [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)])
             y += rowH + 2
 
-            for record in filtered.sorted(by: { $0.date > $1.date }) {
+            for record in filtered {
                 if y > pageRect.height - margin - 20 {
                     context.beginPage()
                     y = margin
