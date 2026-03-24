@@ -36,6 +36,17 @@ struct SettingsView: View {
     @AppStorage("bpReminderEnabled") var bpReminderEnabled = false
     @AppStorage("weightReminderEnabled") var weightReminderEnabled = false
 
+    @State private var bpMorningTime: Date = UserDefaults.standard.object(forKey: "bpMorningReminderTime") as? Date
+        ?? Calendar.current.date(from: DateComponents(hour: 8, minute: 0)) ?? Date()
+    @State private var bpEveningTime: Date = UserDefaults.standard.object(forKey: "bpEveningReminderTime") as? Date
+        ?? Calendar.current.date(from: DateComponents(hour: 20, minute: 0)) ?? Date()
+    @State private var weightReminderTime: Date = UserDefaults.standard.object(forKey: "weightReminderTime") as? Date
+        ?? Calendar.current.date(from: DateComponents(hour: 7, minute: 30)) ?? Date()
+
+    @State private var showBPMorningPicker = false
+    @State private var showBPEveningPicker = false
+    @State private var showWeightPicker = false
+
     init(profile: UserProfile, onDismiss: @escaping () -> Void) {
         self.profile = profile
         self.onDismiss = onDismiss
@@ -388,18 +399,92 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Напоминание об измерении давления")
                             .font(.system(size: 15, weight: .medium))
-                        Text("Утреннее (08:00) и вечернее (20:00)")
+                        Text("Утреннее и вечернее")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Toggle("", isOn: $bpReminderEnabled)
                         .labelsHidden()
-                        .onChange(of: bpReminderEnabled) { _, _ in
+                        .onChange(of: bpReminderEnabled) { _, enabled in
+                            if !enabled {
+                                showBPMorningPicker = false
+                                showBPEveningPicker = false
+                            }
                             NotificationManager.shared.scheduleMeasurementReminders()
                         }
                 }
                 .padding(14)
+
+                if bpReminderEnabled {
+                    Divider().padding(.leading, 14)
+
+                    // Утреннее время
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("УТРЕННЕЕ ИЗМЕРЕНИЕ")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Text(DateFormatter.russianTime.string(from: bpMorningTime))
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.primary)
+                        }
+                        Spacer()
+                        Image(systemName: showBPMorningPicker ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showBPMorningPicker.toggle() }
+
+                    if showBPMorningPicker {
+                        Divider()
+                        DatePicker("", selection: $bpMorningTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                            .environment(\.locale, Locale(identifier: "ru_RU"))
+                            .frame(maxWidth: .infinity)
+                            .onChange(of: bpMorningTime) { _, _ in
+                                UserDefaults.standard.set(bpMorningTime, forKey: "bpMorningReminderTime")
+                                NotificationManager.shared.scheduleMeasurementReminders()
+                            }
+                    }
+
+                    Divider().padding(.leading, 14)
+
+                    // Вечернее время
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("ВЕЧЕРНЕЕ ИЗМЕРЕНИЕ")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Text(DateFormatter.russianTime.string(from: bpEveningTime))
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.primary)
+                        }
+                        Spacer()
+                        Image(systemName: showBPEveningPicker ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showBPEveningPicker.toggle() }
+
+                    if showBPEveningPicker {
+                        Divider()
+                        DatePicker("", selection: $bpEveningTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                            .environment(\.locale, Locale(identifier: "ru_RU"))
+                            .frame(maxWidth: .infinity)
+                            .onChange(of: bpEveningTime) { _, _ in
+                                UserDefaults.standard.set(bpEveningTime, forKey: "bpEveningReminderTime")
+                                NotificationManager.shared.scheduleMeasurementReminders()
+                            }
+                    }
+                }
 
                 Divider().padding(.leading, 14)
 
@@ -408,18 +493,54 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Напоминание о взвешивании")
                             .font(.system(size: 15, weight: .medium))
-                        Text("Ежедневное утреннее (07:30)")
+                        Text("Ежедневное утреннее")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Toggle("", isOn: $weightReminderEnabled)
                         .labelsHidden()
-                        .onChange(of: weightReminderEnabled) { _, _ in
+                        .onChange(of: weightReminderEnabled) { _, enabled in
+                            if !enabled { showWeightPicker = false }
                             NotificationManager.shared.scheduleMeasurementReminders()
                         }
                 }
                 .padding(14)
+
+                if weightReminderEnabled {
+                    Divider().padding(.leading, 14)
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("ВРЕМЯ ВЗВЕШИВАНИЯ")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Text(DateFormatter.russianTime.string(from: weightReminderTime))
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.primary)
+                        }
+                        Spacer()
+                        Image(systemName: showWeightPicker ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showWeightPicker.toggle() }
+
+                    if showWeightPicker {
+                        Divider()
+                        DatePicker("", selection: $weightReminderTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                            .environment(\.locale, Locale(identifier: "ru_RU"))
+                            .frame(maxWidth: .infinity)
+                            .onChange(of: weightReminderTime) { _, _ in
+                                UserDefaults.standard.set(weightReminderTime, forKey: "weightReminderTime")
+                                NotificationManager.shared.scheduleMeasurementReminders()
+                            }
+                    }
+                }
             }
             .background(Color(.secondarySystemBackground))
             .cornerRadius(16)

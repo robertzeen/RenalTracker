@@ -220,8 +220,10 @@ final class NotificationManager {
         let defaults = UserDefaults.standard
 
         if defaults.bool(forKey: "bpReminderEnabled") {
-            let morning = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
-            let evening = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
+            let morningDefault = Calendar.current.date(from: DateComponents(hour: 8,  minute: 0))  ?? Date()
+            let eveningDefault = Calendar.current.date(from: DateComponents(hour: 20, minute: 0))  ?? Date()
+            let morning = defaults.object(forKey: "bpMorningReminderTime") as? Date ?? morningDefault
+            let evening = defaults.object(forKey: "bpEveningReminderTime") as? Date ?? eveningDefault
             scheduleDaily(
                 id: "bp_morning",
                 time: morning,
@@ -237,10 +239,11 @@ final class NotificationManager {
         }
 
         if defaults.bool(forKey: "weightReminderEnabled") {
-            let morning = Calendar.current.date(bySettingHour: 7, minute: 30, second: 0, of: Date()) ?? Date()
+            let weightDefault = Calendar.current.date(from: DateComponents(hour: 7, minute: 30)) ?? Date()
+            let time = defaults.object(forKey: "weightReminderTime") as? Date ?? weightDefault
             scheduleDaily(
                 id: "weight_reminder",
-                time: morning,
+                time: time,
                 title: "Взвеситесь ⚖️",
                 body: "Время зафиксировать вес"
             )
