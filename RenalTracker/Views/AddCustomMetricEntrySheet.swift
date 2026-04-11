@@ -1,53 +1,46 @@
 //
-//  AddDoctorVisitView.swift
+//  AddCustomMetricEntrySheet.swift
 //  RenalTracker
 //
 
 import SwiftUI
 import SwiftData
 
-struct AddDoctorVisitView: View {
+struct AddCustomMetricEntrySheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    var existingVisit: DoctorVisit? = nil
+    let metric: CustomMetric
 
-    @State private var doctorName: String
-    @State private var selectedDate: Date
-    @State private var notes: String
+    @State private var valueText = ""
+    @State private var selectedDate = Date()
     @State private var showDatePicker = false
 
-    init(existingVisit: DoctorVisit? = nil) {
-        self.existingVisit = existingVisit
-        _doctorName = State(initialValue: existingVisit?.doctorName ?? "")
-        _selectedDate = State(initialValue: existingVisit?.date ?? Date())
-        _notes = State(initialValue: existingVisit?.notes ?? "")
+    private var canSave: Bool {
+        let normalized = valueText.replacingOccurrences(of: ",", with: ".")
+        return Double(normalized) != nil
     }
-
-    // MARK: - Body
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-
-                    // 1. Карточка врача
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.15))
-                                .frame(width: 40, height: 40)
-                            Text("👩‍⚕️")
-                                .font(.title3)
-                        }
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("ВРАЧ")
+                    // Значение
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Image(systemName: metric.icon)
+                                .foregroundStyle(.blue)
+                            Text(metric.name.uppercased())
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(.secondary)
-                            TextField("ФИО врача (опционально)", text: $doctorName)
+                        }
+                        HStack {
+                            TextField("0", text: $valueText)
                                 .font(.system(size: 15, weight: .medium))
-                                .textInputAutocapitalization(.words)
-                                .autocorrectionDisabled()
+                                .keyboardType(.decimalPad)
+                            Text(metric.unit)
+                                .font(.system(size: 15))
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(14)
@@ -56,16 +49,15 @@ struct AddDoctorVisitView: View {
                     .overlay(RoundedRectangle(cornerRadius: 16)
                         .stroke(Color(.separator), lineWidth: 0.5))
 
-                    // 2. Карточка даты
+                    // Дата и время
                     VStack(spacing: 0) {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("ДАТА ПРИЁМА")
+                                Text("ДАТА И ВРЕМЯ")
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundStyle(.secondary)
-                                Text(formattedDateTime)
+                                Text(DateFormatter.russianDateTime.string(from: selectedDate))
                                     .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(.primary)
                             }
                             Spacer()
                             Image(systemName: showDatePicker ? "chevron.up" : "chevron.down")
@@ -93,30 +85,11 @@ struct AddDoctorVisitView: View {
                     .cornerRadius(16)
                     .overlay(RoundedRectangle(cornerRadius: 16)
                         .stroke(Color(.separator), lineWidth: 0.5))
-
-                    // 3. Карточка заметок
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("ЗАМЕТКИ")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-
-                        TextField(
-                            "Рекомендации врача, изменения в лечении, результаты осмотра, вопросы на следующий приём...",
-                            text: $notes,
-                            axis: .vertical
-                        )
-                        .font(.system(size: 15))
-                        .lineLimit(5...)
-                    }
-                    .padding(14)
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(16)
-                    .overlay(RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(.separator), lineWidth: 0.5))
                 }
                 .padding(16)
             }
-            .navigationTitle(existingVisit == nil ? "Новая запись" : "Редактирование")
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Добавить запись")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -128,6 +101,7 @@ struct AddDoctorVisitView: View {
                         dismiss()
                     }
                     .fontWeight(.medium)
+                    .disabled(!canSave)
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -141,27 +115,12 @@ struct AddDoctorVisitView: View {
         }
     }
 
-    // MARK: - Вычисляемые свойства
-
-    var formattedDateTime: String {
-        DateFormatter.russianDateTime.string(from: selectedDate)
-    }
-
-    // MARK: - Действия
-
-    func save() {
-        if let visit = existingVisit {
-            visit.doctorName = doctorName.isEmpty ? nil : doctorName
-            visit.date = selectedDate
-            visit.notes = notes.isEmpty ? nil : notes
-        } else {
-            let visit = DoctorVisit(
-                date: selectedDate,
-                doctorName: doctorName.isEmpty ? nil : doctorName,
-                notes: notes.isEmpty ? nil : notes
-            )
-            modelContext.insert(visit)
-        }
+    private func save() {
+        let normalized = valueText.replacingOccurrences(of: ",", with: ".")
+        guard let value = Double(normalized) else { return }
+        let entry = CustomMetricEntry(value: value, date: selectedDate, metric: metric)
+        modelContext.insert(entry)
+        metric.entries.append(entry)
         try? modelContext.save()
     }
 }

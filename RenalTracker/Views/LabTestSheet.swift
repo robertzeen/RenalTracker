@@ -134,9 +134,6 @@ struct LabTestSheet: View {
                                 .datePickerStyle(.graphical)
                                 .environment(\.locale, Locale(identifier: "ru_RU"))
                                 .padding(.horizontal, 8)
-                                .onChange(of: selectedDate) { _, _ in
-                                    showDatePicker = false
-                                }
                         }
 
                         Divider()

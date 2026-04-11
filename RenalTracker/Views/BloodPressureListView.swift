@@ -390,7 +390,6 @@ struct AddBloodPressureSheet: View {
                     .datePickerStyle(.graphical)
                     .environment(\.locale, Locale(identifier: "ru_RU"))
                     .padding(.horizontal, 8)
-                    .onChange(of: selectedDate) { _, _ in showDatePicker = false }
             }
         }
         .background(Color(.secondarySystemBackground))
@@ -502,7 +501,6 @@ private struct EditBloodPressureSheet: View {
                     .datePickerStyle(.graphical)
                     .environment(\.locale, Locale(identifier: "ru_RU"))
                     .padding(.horizontal, 8)
-                    .onChange(of: selectedDate) { _, _ in showDatePicker = false }
             }
         }
         .background(Color(.secondarySystemBackground))

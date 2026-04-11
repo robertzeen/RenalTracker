@@ -381,7 +381,6 @@ private struct AddLabResultSheet: View {
                     .datePickerStyle(.graphical)
                     .environment(\.locale, Locale(identifier: "ru_RU"))
                     .padding(.horizontal, 8)
-                    .onChange(of: selectedDate) { _, _ in showDatePicker = false }
             }
         }
         .background(Color(.secondarySystemBackground))
@@ -494,7 +493,6 @@ private struct EditLabResultSheet: View {
                     .datePickerStyle(.graphical)
                     .environment(\.locale, Locale(identifier: "ru_RU"))
                     .padding(.horizontal, 8)
-                    .onChange(of: selectedDate) { _, _ in showDatePicker = false }
             }
         }
         .background(Color(.secondarySystemBackground))

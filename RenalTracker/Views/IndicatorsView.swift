@@ -25,6 +25,13 @@ struct IndicatorsView: View {
     @Query(sort: \Weight.date, order: .reverse)
     private var weightRecords: [Weight]
 
+    @Query(sort: \CustomMetric.sortOrder)
+    private var allMetrics: [CustomMetric]
+
+    private var activeMetrics: [CustomMetric] {
+        allMetrics.filter { $0.isActive }
+    }
+
     @State private var chartPeriod: ChartPeriod = .days7
     @State private var isShowingAddBloodPressure = false
     @State private var isShowingAddWeight = false
@@ -103,6 +110,10 @@ struct IndicatorsView: View {
                         yDomain: weightYDomain,
                         onAdd: { isShowingAddWeight = true }
                     )
+
+                    ForEach(activeMetrics) { metric in
+                        CustomMetricCardView(metric: metric, chartPeriod: chartPeriod)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -122,5 +133,5 @@ struct IndicatorsView: View {
 
 #Preview {
     IndicatorsView()
-        .modelContainer(for: [BloodPressure.self, Weight.self], inMemory: true)
+        .modelContainer(for: [BloodPressure.self, Weight.self, CustomMetric.self, CustomMetricEntry.self], inMemory: true)
 }
