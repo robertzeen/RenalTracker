@@ -58,7 +58,7 @@ struct WeightListView: View {
                 ContentUnavailableView(
                     "Нет записей",
                     systemImage: "scalemass",
-                    description: Text("Добавьте измерение веса на экране «Показатели»")
+                    description: Text("Добавьте измерение веса на экране «Метрики»")
                 )
             } else {
                 List {

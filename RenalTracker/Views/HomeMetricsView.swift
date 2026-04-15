@@ -68,7 +68,7 @@ struct HomeMetricsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Пока нет данных.\nМожно добавить на вкладке «Показатели».")
+                Text("Пока нет данных.\nМожно добавить на вкладке «Метрики».")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

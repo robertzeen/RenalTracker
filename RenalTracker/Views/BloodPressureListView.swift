@@ -65,7 +65,7 @@ struct BloodPressureListView: View {
                 ContentUnavailableView(
                     "Нет записей",
                     systemImage: "heart.text.square",
-                    description: Text("Добавьте измерение давления на экране «Показатели»")
+                    description: Text("Добавьте измерение давления на экране «Метрики»")
                 )
             } else {
                 List {

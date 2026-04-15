@@ -20,5 +20,5 @@ struct ContentPlaceholderView: View {
 }
 
 #Preview {
-    ContentPlaceholderView(title: "Показатели")
+    ContentPlaceholderView(title: "Метрики")
 }

@@ -17,7 +17,7 @@ struct MainTabView: View {
                 .tag(0)
             IndicatorsView()
                 .tabItem {
-                    Label("Показатели", systemImage: "heart")
+                    Label("Метрики", systemImage: "heart")
                 }
                 .tag(1)
             LabResultsView()
