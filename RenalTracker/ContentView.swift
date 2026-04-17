@@ -7,28 +7,16 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
-    @State private var hasCompletedOnboarding: Bool = false
 
     var body: some View {
         Group {
-            if showOnboarding {
-                OnboardingView(onComplete: { hasCompletedOnboarding = true })
-            } else {
+            if profiles.contains(where: { $0.hasCompletedOnboarding }) {
                 MainTabView()
+            } else {
+                OnboardingView(onComplete: { })
             }
         }
-        .onAppear {
-            hasCompletedOnboarding = profiles.contains { $0.hasCompletedOnboarding }
-        }
-        .onChange(of: profiles.count) { _, _ in
-            hasCompletedOnboarding = profiles.contains { $0.hasCompletedOnboarding }
-        }
-    }
-
-    private var showOnboarding: Bool {
-        !hasCompletedOnboarding
     }
 }
 
