@@ -80,40 +80,8 @@ struct HomeView: View {
 
     // MARK: - Medications schedule
 
-    private var calendar: Calendar { Calendar.current }
-    private var todayStart: Date { calendar.startOfDay(for: Date()) }
-    private var todayEnd: Date {
-        calendar.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart.addingTimeInterval(86400)
-    }
-    private var todayWeekday: Int { calendar.component(.weekday, from: Date()) }
-
-    private var todaysMedications: [Medication] {
-        medications.filter { $0.isActive && $0.daysOfWeek.contains(todayWeekday) }
-    }
-
-    private var todayScheduleGroups: [(time: Date, medications: [Medication])] {
-        let grouped = Dictionary(grouping: todaysMedications) { med -> Date in
-            let comps = calendar.dateComponents([.hour, .minute], from: med.time)
-            return calendar.date(from: comps) ?? med.time
-        }
-        return grouped
-            .map { key, value in (time: key, medications: value.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) }
-            .sorted { $0.time < $1.time }
-    }
-
-    private var allMedicationsForTodayTaken: Bool {
-        guard !todayScheduleGroups.isEmpty else { return false }
-        return todayScheduleGroups.allSatisfy { group in
-            group.medications.allSatisfy { intakeForToday(medication: $0)?.isTaken == true }
-        }
-    }
-
-    private var nextUpcomingGroup: (time: Date, medications: [Medication])? {
-        let now = Date()
-        return todayScheduleGroups.first { group in
-            group.time > now &&
-            !group.medications.allSatisfy { intakeForToday(medication: $0)?.isTaken == true }
-        }
+    private var scheduleCalculator: MedicationScheduleCalculator {
+        MedicationScheduleCalculator(medications: medications, intakes: intakes, now: currentTime)
     }
 
     // MARK: - Body
@@ -137,10 +105,10 @@ struct HomeView: View {
 
                     HomeMedicationsView(
                         hasMedications: !medications.isEmpty,
-                        groups: todayScheduleGroups,
-                        allTaken: allMedicationsForTodayTaken,
-                        nextUpcomingGroup: nextUpcomingGroup,
-                        isTaken: { intakeForToday(medication: $0)?.isTaken == true }
+                        groups: scheduleCalculator.todayScheduleGroups,
+                        allTaken: scheduleCalculator.allTaken,
+                        nextUpcomingGroup: scheduleCalculator.nextUpcomingGroup,
+                        isTaken: { scheduleCalculator.isTaken($0) }
                     )
                     .padding(.vertical, 4)
 
@@ -211,13 +179,6 @@ struct HomeView: View {
         return days + 1
     }
 
-    private func intakeForToday(medication: Medication) -> MedicationIntake? {
-        intakes.first { intake in
-            intake.medication == medication &&
-            intake.date >= todayStart &&
-            intake.date < todayEnd
-        }
-    }
 }
 
 #Preview {

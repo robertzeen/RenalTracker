@@ -26,16 +26,8 @@ struct MedicationsView: View {
     @State private var isShowingExportSheet = false
     @State private var isGeneratingPDF = false
 
-    private var calendar: Calendar { Calendar.current }
-
-    private var todayStart: Date { calendar.startOfDay(for: Date()) }
-
-    private var todayEnd: Date {
-        calendar.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart.addingTimeInterval(24 * 60 * 60)
-    }
-
-    private var todayWeekday: Int {
-        calendar.component(.weekday, from: Date())
+    private var scheduleCalculator: MedicationScheduleCalculator {
+        MedicationScheduleCalculator(medications: medications, intakes: intakes)
     }
 
     private var activeMedicationsSortedByTime: [Medication] {
@@ -59,33 +51,6 @@ struct MedicationsView: View {
         }
     }
 
-    /// Активные лекарства, которые должны быть приняты сегодня
-    private var todaysMedications: [Medication] {
-        medications.filter { $0.isActive && $0.daysOfWeek.contains(todayWeekday) }
-    }
-
-    private var totalCount: Int { todaysMedications.count }
-
-    private var takenCount: Int {
-        todaysMedications.filter { intakeForToday(medication: $0)?.isTaken == true }.count
-    }
-
-    /// Группы лекарств по времени приёма (от раннего к позднему)
-    private var todayScheduleGroups: [(time: Date, medications: [Medication])] {
-        let grouped = Dictionary(grouping: todaysMedications) { med -> Date in
-            let comps = calendar.dateComponents([.hour, .minute], from: med.time)
-            return calendar.date(from: comps) ?? med.time
-        }
-        return grouped
-            .map { key, value in
-                let sortedMeds = value.sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                }
-                return (time: key, medications: sortedMeds)
-            }
-            .sorted { $0.time < $1.time }
-    }
-
     var body: some View {
         ZStack {
             NavigationStack {
@@ -94,11 +59,11 @@ struct MedicationsView: View {
                         emptyStateView
                     } else {
                         List {
-                            if !todaysMedications.isEmpty {
+                            if !scheduleCalculator.todaysMedications.isEmpty {
                                 Section {
                                     MedicationTodayProgressCard(
-                                        takenCount: takenCount,
-                                        totalCount: totalCount
+                                        takenCount: scheduleCalculator.takenCount,
+                                        totalCount: scheduleCalculator.totalCount
                                     )
                                     .listRowBackground(Color.clear)
                                     .listRowSeparator(.hidden)
@@ -107,13 +72,13 @@ struct MedicationsView: View {
                             }
 
                             // Расписание на сегодня
-                            if todayScheduleGroups.isEmpty {
+                            if scheduleCalculator.todayScheduleGroups.isEmpty {
                                 Section {
                                     Text(MedicationScheduleCopy.noScheduledToday)
                                         .foregroundStyle(.secondary)
                                 }
                             } else {
-                                ForEach(todayScheduleGroups, id: \.time) { group in
+                                ForEach(scheduleCalculator.todayScheduleGroups, id: \.time) { group in
                                     Section {
                                         ForEach(group.medications) { med in
                                             medicationRow(med: med)
@@ -255,7 +220,7 @@ struct MedicationsView: View {
 
     @ViewBuilder
     private func medicationRow(med: Medication) -> some View {
-        let isTaken = intakeForToday(medication: med)?.isTaken == true
+        let isTaken = scheduleCalculator.isTaken(med)
         HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(med.name)
@@ -304,16 +269,8 @@ struct MedicationsView: View {
         }
     }
 
-    private func intakeForToday(medication: Medication) -> MedicationIntake? {
-        intakes.first { intake in
-            intake.medication == medication &&
-            intake.date >= todayStart &&
-            intake.date < todayEnd
-        }
-    }
-
     private func toggleTaken(for medication: Medication) {
-        if let existing = intakeForToday(medication: medication) {
+        if let existing = scheduleCalculator.intakeForToday(for: medication) {
             if existing.isTaken {
                 modelContext.delete(existing)
             } else {

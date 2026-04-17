@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3221BDAA2F921E200072851D /* WeekdayPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3221BDA82F921E200072851D /* WeekdayPickerView.swift */; };
 		3221BDAB2F921E200072851D /* MedicationsPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3221BDA92F921E200072851D /* MedicationsPDFExporter.swift */; };
+		3221BDAD2F9229890072851D /* MedicationScheduleCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3221BDAC2F9229890072851D /* MedicationScheduleCalculator.swift */; };
 		323889712F8A4F88000680B2 /* CustomMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3238896F2F8A4F88000680B2 /* CustomMetric.swift */; };
 		323889722F8A4F88000680B2 /* CustomMetricEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323889702F8A4F88000680B2 /* CustomMetricEntry.swift */; };
 		323889772F8A53FA000680B2 /* CustomMetricCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323889752F8A53FA000680B2 /* CustomMetricCatalog.swift */; };
@@ -87,6 +88,7 @@
 /* Begin PBXFileReference section */
 		3221BDA82F921E200072851D /* WeekdayPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WeekdayPickerView.swift; path = RenalTracker/Views/Medications1/Components/WeekdayPickerView.swift; sourceTree = SOURCE_ROOT; };
 		3221BDA92F921E200072851D /* MedicationsPDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MedicationsPDFExporter.swift; path = RenalTracker/Views/Medications1/Components/MedicationsPDFExporter.swift; sourceTree = SOURCE_ROOT; };
+		3221BDAC2F9229890072851D /* MedicationScheduleCalculator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MedicationScheduleCalculator.swift; sourceTree = "<group>"; };
 		3238896F2F8A4F88000680B2 /* CustomMetric.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomMetric.swift; sourceTree = "<group>"; };
 		323889702F8A4F88000680B2 /* CustomMetricEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomMetricEntry.swift; sourceTree = "<group>"; };
 		323889752F8A53FA000680B2 /* CustomMetricCatalog.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomMetricCatalog.swift; sourceTree = "<group>"; };
@@ -213,7 +215,7 @@
 		32C32EE12F5360F00063D338 /* RenalTracker */ = {
 			isa = PBXGroup;
 			children = (
-					32A15D262F620C1500C94C43 /* notification.caf */,
+				32A15D262F620C1500C94C43 /* notification.caf */,
 				32C32EE42F5360F00063D338 /* ContentView.swift */,
 				32C32F122F5583540063D338 /* PreviewData.swift */,
 				32A15D2E2F72E86900C94C43 /* Quotes.swift */,
@@ -255,6 +257,7 @@
 		32C32F202F5723AF0063D338 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				3221BDAC2F9229890072851D /* MedicationScheduleCalculator.swift */,
 				32C32F242F573AD50063D338 /* NotificationManager.swift */,
 				32C32F212F5723DF0063D338 /* DateFormatters.swift */,
 			);
@@ -457,7 +460,7 @@
 				3279F30D2F7335C4007186B5 /* LabTestDetailView.swift in Sources */,
 				3221BDAA2F921E200072851D /* WeekdayPickerView.swift in Sources */,
 				32C32EE32F5360F00063D338 /* RenalTrackerApp.swift in Sources */,
-					3279F3072F7335C4007186B5 /* PulseCardView.swift in Sources */,
+				3279F3072F7335C4007186B5 /* PulseCardView.swift in Sources */,
 				32C32EE52F5360F00063D338 /* ContentView.swift in Sources */,
 				3279F3102F7335C4007186B5 /* AddTrackedLabTestSheet.swift in Sources */,
 				32C32F132F5583540063D338 /* PreviewData.swift in Sources */,
@@ -494,6 +497,7 @@
 				RT00A2F5360F30063D338 /* MedicationsView.swift in Sources */,
 				RT00C2F5360F30063D338 /* ContentPlaceholderView.swift in Sources */,
 				323889782F8A53FA000680B2 /* AddCustomMetricView.swift in Sources */,
+				3221BDAD2F9229890072851D /* MedicationScheduleCalculator.swift in Sources */,
 				323889722F8A4F88000680B2 /* CustomMetricEntry.swift in Sources */,
 				3221BDAB2F921E200072851D /* MedicationsPDFExporter.swift in Sources */,
 				32C32F222F5723DF0063D338 /* DateFormatters.swift in Sources */,
