@@ -131,53 +131,7 @@ struct MedicationsView: View {
                                 ForEach(todayScheduleGroups, id: \.time) { group in
                                     Section {
                                         ForEach(group.medications) { med in
-                                            let isTaken = intakeForToday(medication: med)?.isTaken == true
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 3) {
-                                                    Text(med.name)
-                                                        .font(.headline)
-                                                        .foregroundStyle(.primary)
-                                                    Text(MedicationScheduleFormat.dosageCaption(for: med))
-                                                        .font(.system(size: 13))
-                                                        .foregroundStyle(.secondary)
-                                                }
-                                                Spacer()
-                                                ZStack {
-                                                    Circle()
-                                                        .stroke(
-                                                            isTaken ? Color.green : Color(.separator),
-                                                            lineWidth: 1.5
-                                                        )
-                                                        .frame(width: 26, height: 26)
-                                                    if isTaken {
-                                                        Image(systemName: "checkmark")
-                                                            .font(.system(size: 12, weight: .semibold))
-                                                            .foregroundStyle(.green)
-                                                    }
-                                                }
-                                                .contentShape(Circle())
-                                                .onTapGesture {
-                                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                                        toggleTaken(for: med)
-                                                    }
-                                                }
-                                                .accessibilityLabel(isTaken ? "Лекарство принято" : "Отметить приём")
-                                                .accessibilityAddTraits(.isButton)
-                                            }
-                                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                                Button(role: .destructive) {
-                                                    medicationToDelete = med
-                                                    isShowingDeleteConfirmation = true
-                                                } label: {
-                                                    Label("Удалить", systemImage: "trash")
-                                                }
-                                                Button {
-                                                    medicationToEdit = med
-                                                } label: {
-                                                    Label("Изменить", systemImage: "pencil")
-                                                }
-                                                .tint(.gray)
-                                            }
+                                            medicationRow(med: med)
                                         }
                                     } header: {
                                         HStack {
@@ -293,6 +247,57 @@ struct MedicationsView: View {
     }
 
     // MARK: - Helpers
+
+    @ViewBuilder
+    private func medicationRow(med: Medication) -> some View {
+        let isTaken = intakeForToday(medication: med)?.isTaken == true
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(med.name)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text(MedicationScheduleFormat.dosageCaption(for: med))
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            ZStack {
+                Circle()
+                    .stroke(
+                        isTaken ? Color.green : Color(.separator),
+                        lineWidth: 1.5
+                    )
+                    .frame(width: 26, height: 26)
+                if isTaken {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.green)
+                }
+            }
+            .contentShape(Circle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    toggleTaken(for: med)
+                }
+            }
+            .accessibilityLabel(isTaken ? "Лекарство принято" : "Отметить приём")
+            .accessibilityAddTraits(.isButton)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                medicationToDelete = med
+                isShowingDeleteConfirmation = true
+            } label: {
+                Label("Удалить", systemImage: "trash")
+            }
+            Button {
+                medicationToEdit = med
+            } label: {
+                Label("Изменить", systemImage: "pencil")
+            }
+            .tint(.gray)
+        }
+    }
 
     private func intakeForToday(medication: Medication) -> MedicationIntake? {
         intakes.first { intake in
