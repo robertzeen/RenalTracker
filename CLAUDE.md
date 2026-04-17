@@ -24,9 +24,9 @@ iOS приложение для пациентов на гемодиализе, 
 - Визиты к врачу: история, детали, добавление/редактирование
 - Настройки: профиль, статус лечения, уведомления, управление кастомными метриками
 - Уведомления: лекарства, АД, вес, визиты, анализы
-- SwiftData миграция: VersionedSchema V1→V2 (AppMigrationPlan)
-- Модели CustomMetric и CustomMetricEntry (V2)
+- Модели CustomMetric и CustomMetricEntry добавлены в SwiftData-схему
 - Каталог кастомных метрик (CustomMetricCatalog, 7 метрик)
+- SwiftData версионирование отложено до первого релиза; `ModelContainer` использует прямой `Schema([...])` со всеми 11 моделями, без `migrationPlan`
 - **CustomMetrics UI** — полностью реализован:
   - SettingsView: раздел "ДОПОЛНИТЕЛЬНЫЕ ПОКАЗАТЕЛИ" — включение/выключение из каталога, добавление своих
   - IndicatorsView: карточки активных метрик с графиком (LineMark+catmullRom), синхронизированный ChartPeriod picker
@@ -34,6 +34,12 @@ iOS приложение для пациентов на гемодиализе, 
   - AddCustomMetricEntrySheet: ввод значения + дата/время
   - AddCustomMetricView: создание кастомной метрики (имя, единица, иконка из сетки SF Symbols)
 - Переименование вкладки "Показатели" → "Метрики" во всех 6 файлах
+
+- **Рефакторинг MedicationsView** — 4 шага без изменения поведения:
+  - Шаг 1: `WeekdayPickerView` — выделен из `AddMedicationSheet` и `EditMedicationSheet`, устранено дублирование ~70 строк
+  - Шаг 2: `MedicationsPDFExporter` — две чистые функции генерации PDF вынесены в отдельный `enum`, `MedicationsView` избавился от `import PDFKit/UIKit`
+  - Шаг 3: `medicationRow(med:)` — инлайн-строка списка (~47 строк) вынесена в `@ViewBuilder` func внутри `MedicationsView`
+  - Шаг 4: `emptyStateView` — пустое состояние вынесено в `@ViewBuilder var` внутри `MedicationsView`
 
 ### В работе / Незавершено
 - **WellBeing** — модель есть (`weakness`, `headache`, `swelling`), UI отсутствует
@@ -66,8 +72,10 @@ iOS приложение для пациентов на гемодиализе, 
 | `AddTrackedLabTestSheet.swift` | Добавление анализа из каталога или кастомного; защита от дублей |
 | `LabTestCatalog.swift` | 16 предустановленных анализов с референсными значениями |
 | `CustomMetricCatalog.swift` | 7 предустановленных кастомных метрик здоровья |
-| `MedicationsView.swift` | Расписание приёма лекарств по времени, чекбоксы, свайп (удалить/изменить), PDF |
+| `MedicationsView.swift` | Расписание приёма лекарств по времени, чекбоксы, свайп (удалить/изменить), PDF; содержит `AddMedicationSheet`, `EditMedicationSheet` |
 | `MedicationScheduleComponents.swift` | Общие компоненты: `MedicationTodayProgressCard`, `MedicationTimeSlotHeader`, `MedicationScheduleRow`, `MedicationScheduleFormat` |
+| `Medications1/Components/WeekdayPickerView.swift` | Пикер дней недели (`@Binding<Set<Int>>`); `WeekdayOption` и `allWeekdayOptions` определены здесь — единственное место в проекте |
+| `Medications1/Components/MedicationsPDFExporter.swift` | `enum` с двумя статическими методами: `generateData(meds:patientName:) -> Data?` и `fileURL(from:) throws -> URL` |
 | `DoctorVisitsView.swift` | История визитов к врачу по месяцам, свайп-удаление |
 | `DoctorVisitDetailView.swift` | Детали визита: врач, дата, заметки; редактирование |
 | `AddDoctorVisitView.swift` | Добавление/редактирование записи о визите |
@@ -111,9 +119,8 @@ iOS приложение для пациентов на гемодиализе, 
 | `Quotes.swift` | `allQuotes: [DailyQuote]` — ~75 цитат на русском. Можно добавлять. |
 | `LabTestCatalog.swift` | `predefinedLabTests` — 16 анализов (почки, электролиты, кровь, печень, иммуносупрессия). Можно добавлять. |
 | `CustomMetricCatalog.swift` | `predefined: [CustomMetricDefinition]` — 7 метрик: Шаги, Активность, Вода, Сон, Температура, Сатурация, Уровень сахара |
-| `AppMigrationPlan.swift` | SchemaV1 (9 моделей) → SchemaV2 (+CustomMetric, +CustomMetricEntry), lightweight-миграция, `typealias CurrentSchema = SchemaV2` |
+| `RenalTrackerApp.swift` | `@main`, ModelContainer с прямым `Schema([11 моделей])`, запрос разрешений на уведомления; комментарий с roadmap версионирования перед релизом |
 | `PreviewData.swift` | Тестовые данные для Xcode Preview |
-| `RenalTrackerApp.swift` | `@main`, ModelContainer через `AppMigrationPlan`, запрос разрешений на уведомления |
 
 ---
 
@@ -222,25 +229,17 @@ ZStack {
 
 ---
 
-## Схема миграции SwiftData
+## SwiftData: версионирование схемы (roadmap к релизу)
 
-```
-SchemaV1 (1.0.0)          SchemaV2 (2.0.0)
-─────────────────    →    ──────────────────────────
-UserProfile               UserProfile
-BloodPressure             BloodPressure
-Weight                    Weight
-LabResult                 LabResult
-Medication                Medication
-MedicationIntake          MedicationIntake
-WellBeing                 WellBeing
-TrackedLabTest            TrackedLabTest
-DoctorVisit               DoctorVisit
-                    +     CustomMetric
-                    +     CustomMetricEntry
-```
+Версионирование (`VersionedSchema` / `SchemaMigrationPlan`) отложено — приложение в разработке, реальных пользователей нет.
 
-Тип миграции: `.lightweight` — новые таблицы, существующие данные не затрагиваются.
+Текущий `ModelContainer` использует прямой `Schema([UserProfile, BloodPressure, Weight, LabResult, TrackedLabTest, Medication, MedicationIntake, WellBeing, DoctorVisit, CustomMetric, CustomMetricEntry])` без `migrationPlan`.
+
+**Перед первым релизом в App Store:**
+1. Создать `AppMigrationPlan.swift`: зафиксировать текущие модели как `SchemaV1` (вложенные `@Model`-копии)
+2. Объявить `AppMigrationPlan: SchemaMigrationPlan` и `typealias CurrentSchema = SchemaV1`
+3. Заменить `Schema([...])` на `Schema(CurrentSchema.models)` и передать `migrationPlan:` в `ModelContainer`
+4. Все последующие изменения моделей — через новые версии `SchemaVN`
 
 ---
 
