@@ -451,21 +451,6 @@ private struct AddMedicationSheet: View {
     @State private var selectedDays: Set<Int> = []
     @State private var time: Date = Date()
 
-    private struct WeekdayOption: Identifiable {
-        let id: Int
-        let shortTitle: String
-    }
-
-    private let weekdayOptions: [WeekdayOption] = [
-        .init(id: 2, shortTitle: "Пн"),
-        .init(id: 3, shortTitle: "Вт"),
-        .init(id: 4, shortTitle: "Ср"),
-        .init(id: 5, shortTitle: "Чт"),
-        .init(id: 6, shortTitle: "Пт"),
-        .init(id: 7, shortTitle: "Сб"),
-        .init(id: 1, shortTitle: "Вс")
-    ]
-
     var body: some View {
         NavigationStack {
             Form {
@@ -483,47 +468,7 @@ private struct AddMedicationSheet: View {
                 }
 
                 Section("Дни приёма") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            ForEach(weekdayOptions) { option in
-                                let isSelected = selectedDays.contains(option.id)
-                                Button { toggleDay(option.id) } label: {
-                                    Text(option.shortTitle)
-                                        .font(.subheadline)
-                                        .padding(.vertical, 6)
-                                        .padding(.horizontal, 10)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color(.systemGray6))
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-
-                        let allDays = Set(weekdayOptions.map { $0.id })
-                        let isEveryday = selectedDays == allDays
-
-                        Button {
-                            selectedDays = isEveryday ? [] : allDays
-                        } label: {
-                            Text("Ежедневно")
-                                .font(.subheadline)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(isEveryday ? Color.accentColor.opacity(0.2) : Color(.systemGray6))
-                                )
-                        }
-                        .buttonStyle(.plain)
-
-                        if selectedDays.isEmpty {
-                            Text("Выберите хотя бы один день.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    WeekdayPickerView(selectedDays: $selectedDays)
                 }
 
                 Section("Время приёма") {
@@ -547,14 +492,6 @@ private struct AddMedicationSheet: View {
 
     private var canSave: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty && !selectedDays.isEmpty
-    }
-
-    private func toggleDay(_ weekday: Int) {
-        if selectedDays.contains(weekday) {
-            selectedDays.remove(weekday)
-        } else {
-            selectedDays.insert(weekday)
-        }
     }
 
     private func save() {
@@ -585,21 +522,6 @@ private struct EditMedicationSheet: View {
     @State private var dosageAmountText: String
     @State private var selectedDays: Set<Int>
 
-    private struct WeekdayOption: Identifiable {
-        let id: Int
-        let shortTitle: String
-    }
-
-    private let weekdayOptions: [WeekdayOption] = [
-        .init(id: 2, shortTitle: "Пн"),
-        .init(id: 3, shortTitle: "Вт"),
-        .init(id: 4, shortTitle: "Ср"),
-        .init(id: 5, shortTitle: "Чт"),
-        .init(id: 6, shortTitle: "Пт"),
-        .init(id: 7, shortTitle: "Сб"),
-        .init(id: 1, shortTitle: "Вс")
-    ]
-
     init(medication: Medication) {
         self.medication = medication
         _dosageAmountText = State(initialValue: medication.dosageAmount.map { String($0) } ?? "")
@@ -623,47 +545,7 @@ private struct EditMedicationSheet: View {
                 }
 
                 Section("Дни приёма") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            ForEach(weekdayOptions) { option in
-                                let isSelected = selectedDays.contains(option.id)
-                                Button { toggleDay(option.id) } label: {
-                                    Text(option.shortTitle)
-                                        .font(.subheadline)
-                                        .padding(.vertical, 6)
-                                        .padding(.horizontal, 10)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color(.systemGray6))
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-
-                        let allDays = Set(weekdayOptions.map { $0.id })
-                        let isEveryday = selectedDays == allDays
-
-                        Button {
-                            selectedDays = isEveryday ? [] : allDays
-                        } label: {
-                            Text("Ежедневно")
-                                .font(.subheadline)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(isEveryday ? Color.accentColor.opacity(0.2) : Color(.systemGray6))
-                                )
-                        }
-                        .buttonStyle(.plain)
-
-                        if selectedDays.isEmpty {
-                            Text("Выберите хотя бы один день.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    WeekdayPickerView(selectedDays: $selectedDays)
                 }
 
                 Section("Время приёма") {
@@ -681,14 +563,6 @@ private struct EditMedicationSheet: View {
                     Button("Сохранить") { save() }
                 }
             }
-        }
-    }
-
-    private func toggleDay(_ weekday: Int) {
-        if selectedDays.contains(weekday) {
-            selectedDays.remove(weekday)
-        } else {
-            selectedDays.insert(weekday)
         }
     }
 

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3221BDA22F921C0A0072851D /* WeekdayPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3221BDA12F921C0A0072851D /* WeekdayPickerView.swift */; };
 		323889712F8A4F88000680B2 /* CustomMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3238896F2F8A4F88000680B2 /* CustomMetric.swift */; };
 		323889722F8A4F88000680B2 /* CustomMetricEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323889702F8A4F88000680B2 /* CustomMetricEntry.swift */; };
 		323889742F8A4F96000680B2 /* AppMigrationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323889732F8A4F96000680B2 /* AppMigrationPlan.swift */; };
@@ -84,6 +85,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3221BDA12F921C0A0072851D /* WeekdayPickerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WeekdayPickerView.swift; path = Medications/Components/WeekdayPickerView.swift; sourceTree = "<group>"; };
 		3238896F2F8A4F88000680B2 /* CustomMetric.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomMetric.swift; sourceTree = "<group>"; };
 		323889702F8A4F88000680B2 /* CustomMetricEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomMetricEntry.swift; sourceTree = "<group>"; };
 		323889732F8A4F96000680B2 /* AppMigrationPlan.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppMigrationPlan.swift; sourceTree = "<group>"; };
@@ -264,6 +266,7 @@
 		RTGRP2F5360F30063D338 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3221BDA12F921C0A0072851D /* WeekdayPickerView.swift */,
 				3238897A2F8A55DE000680B2 /* AddCustomMetricEntrySheet.swift */,
 				323889792F8A55DE000680B2 /* CustomMetricCardView.swift */,
 				3238897B2F8A55DE000680B2 /* CustomMetricListView.swift */,
@@ -473,6 +476,7 @@
 				3238897E2F8A55DE000680B2 /* CustomMetricListView.swift in Sources */,
 				RT0092F5360F30063D338 /* LabResultsView.swift in Sources */,
 				RT00A2F5360F30063D338 /* MedicationsView.swift in Sources */,
+				3221BDA22F921C0A0072851D /* WeekdayPickerView.swift in Sources */,
 				RT00C2F5360F30063D338 /* ContentPlaceholderView.swift in Sources */,
 				323889782F8A53FA000680B2 /* AddCustomMetricView.swift in Sources */,
 				323889722F8A4F88000680B2 /* CustomMetricEntry.swift in Sources */,
