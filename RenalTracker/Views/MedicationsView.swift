@@ -91,22 +91,7 @@ struct MedicationsView: View {
             NavigationStack {
                 Group {
                     if medications.isEmpty {
-                        VStack(spacing: 24) {
-                            VStack(spacing: 8) {
-                                Text("Лекарства")
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
-                                Text("Добавьте принимаемые лекарства, чтобы видеть расписание приёма и отмечать выполненные дозы.")
-                                    .font(.subheadline)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Button("Добавить принимаемые лекарства") {
-                                isShowingAddMedication = true
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding()
+                        emptyStateView
                     } else {
                         List {
                             if !todaysMedications.isEmpty {
@@ -247,6 +232,26 @@ struct MedicationsView: View {
     }
 
     // MARK: - Helpers
+
+    @ViewBuilder
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 8) {
+                Text("Лекарства")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Text("Добавьте принимаемые лекарства, чтобы видеть расписание приёма и отмечать выполненные дозы.")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+            }
+            Button("Добавить принимаемые лекарства") {
+                isShowingAddMedication = true
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
 
     @ViewBuilder
     private func medicationRow(med: Medication) -> some View {
