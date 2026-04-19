@@ -57,6 +57,8 @@
 		32C32F282F576AEE0063D338 /* DoctorVisit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F272F576AEE0063D338 /* DoctorVisit.swift */; };
 		32C32F2B2F576AF70063D338 /* DoctorVisitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F292F576AF70063D338 /* DoctorVisitsView.swift */; };
 		32C32F2C2F576AF70063D338 /* DoctorVisitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C32F2A2F576AF70063D338 /* DoctorVisitDetailView.swift */; };
+		32D6B3572F9541EB0032C065 /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3552F9541EB0032C065 /* PDFExporter.swift */; };
+		32D6B3582F9541EB0032C065 /* PDFReportRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3562F9541EB0032C065 /* PDFReportRenderer.swift */; };
 		RT0012F5360F30063D338 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0011F5360F30063D338 /* UserProfile.swift */; };
 		RT0022F5360F30063D338 /* BloodPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0021F5360F30063D338 /* BloodPressure.swift */; };
 		RT0032F5360F30063D338 /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0031F5360F30063D338 /* Weight.swift */; };
@@ -143,6 +145,8 @@
 		32C32F272F576AEE0063D338 /* DoctorVisit.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DoctorVisit.swift; sourceTree = "<group>"; };
 		32C32F292F576AF70063D338 /* DoctorVisitsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DoctorVisitsView.swift; sourceTree = "<group>"; };
 		32C32F2A2F576AF70063D338 /* DoctorVisitDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DoctorVisitDetailView.swift; sourceTree = "<group>"; };
+		32D6B3552F9541EB0032C065 /* PDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
+		32D6B3562F9541EB0032C065 /* PDFReportRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PDFReportRenderer.swift; sourceTree = "<group>"; };
 		RT0011F5360F30063D338 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		RT0021F5360F30063D338 /* BloodPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressure.swift; sourceTree = "<group>"; };
 		RT0031F5360F30063D338 /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
@@ -288,6 +292,8 @@
 		32D6B3542F9541230032C065 /* PDFExport */ = {
 			isa = PBXGroup;
 			children = (
+				32D6B3552F9541EB0032C065 /* PDFExporter.swift */,
+				32D6B3562F9541EB0032C065 /* PDFReportRenderer.swift */,
 			);
 			path = PDFExport;
 			sourceTree = "<group>";
@@ -507,6 +513,7 @@
 				RT0032F5360F30063D338 /* Weight.swift in Sources */,
 				RT0042F5360F30063D338 /* LabResult.swift in Sources */,
 				3279F30F2F7335C4007186B5 /* HomeMedicationsView.swift in Sources */,
+				32D6B3572F9541EB0032C065 /* PDFExporter.swift in Sources */,
 				3279F3092F7335C4007186B5 /* WeightListView.swift in Sources */,
 				3279F3122F7335C4007186B5 /* BloodPressureCardView.swift in Sources */,
 				3279F3062F7335C4007186B5 /* HomeGreetingView.swift in Sources */,
@@ -529,6 +536,7 @@
 				RT00C2F5360F30063D338 /* ContentPlaceholderView.swift in Sources */,
 				323889782F8A53FA000680B2 /* AddCustomMetricView.swift in Sources */,
 				3221BDBA2F922D140072851D /* SettingsView.swift in Sources */,
+				32D6B3582F9541EB0032C065 /* PDFReportRenderer.swift in Sources */,
 				3221BDAD2F9229890072851D /* MedicationScheduleCalculator.swift in Sources */,
 				323889722F8A4F88000680B2 /* CustomMetricEntry.swift in Sources */,
 				3221BDAB2F921E200072851D /* MedicationsPDFExporter.swift in Sources */,
