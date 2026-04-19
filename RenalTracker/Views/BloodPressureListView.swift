@@ -6,8 +6,6 @@
 import SwiftUI
 import SwiftData
 import Charts
-import PDFKit
-import UIKit
 
 // MARK: - BloodPressure Identifiable
 
@@ -23,6 +21,8 @@ struct BloodPressureListView: View {
 
     @Query(sort: \BloodPressure.date, order: .reverse)
     private var records: [BloodPressure]
+
+    @Query private var profiles: [UserProfile]
 
     @State private var recordToEdit: BloodPressure?
     @State private var recordToDelete: BloodPressure?
@@ -41,6 +41,13 @@ struct BloodPressureListView: View {
             case .all: return "Все данные"
             }
         }
+    }
+
+    private var patientDisplayName: String? {
+        guard let profile = profiles.first else { return nil }
+        var parts = [profile.name]
+        if let last = profile.lastName { parts.append(last) }
+        return parts.joined(separator: " ")
     }
 
     private var calendar: Calendar {
@@ -178,129 +185,45 @@ struct BloodPressureListView: View {
 
     @MainActor
     private func exportPDF(for period: ExportPeriod) {
-        let filteredRecords: [BloodPressure]
         let now = Date()
+        let filteredRecords: [BloodPressure]
+        let periodDescription: String
 
         switch period {
         case .days7:
             let from = calendar.date(byAdding: .day, value: -7, to: now) ?? now
             filteredRecords = records.filter { $0.date >= from }
+            periodDescription = "за последние 7 дней"
         case .days30:
             let from = calendar.date(byAdding: .day, value: -30, to: now) ?? now
             filteredRecords = records.filter { $0.date >= from }
+            periodDescription = "за последние 30 дней"
         case .all:
             filteredRecords = records
+            periodDescription = "за весь период наблюдения"
         }
 
         guard !filteredRecords.isEmpty else { return }
 
-        let periodDescription: String
-        switch period {
-        case .days7:  periodDescription = "за последние 7 дней"
-        case .days30: periodDescription = "за последние 30 дней"
-        case .all:    periodDescription = "за весь период наблюдения"
+        let snapshot = filteredRecords.map {
+            BloodPressurePDFExporter.Record(
+                date: $0.date,
+                systolic: $0.systolic,
+                diastolic: $0.diastolic,
+                pulse: $0.pulse
+            )
         }
-
-        guard let data = generatePDFData(records: filteredRecords, periodDescription: periodDescription) else { return }
-
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("BPReport-\(UUID().uuidString).pdf")
+        let data = BloodPressurePDFExporter.makeData(
+            records: snapshot,
+            periodDescription: periodDescription,
+            patientName: patientDisplayName
+        )
         do {
-            try data.write(to: tempURL)
-            pdfURL = tempURL
+            pdfURL = try BloodPressurePDFExporter.fileURL(from: data)
             isSharePresented = true
         } catch {
             print("Failed to write PDF: \(error)")
         }
-    }
-
-    @MainActor
-    private func generatePDFData(records: [BloodPressure], periodDescription: String) -> Data? {
-        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
-        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
-
-        let data = renderer.pdfData { context in
-            context.beginPage()
-
-            let margin: CGFloat = 32
-            var y: CGFloat = margin
-
-            let title = "Отчёт по давлению и пульсу"
-            let subtitle = "\(periodDescription.capitalized)\nСформировано: \(DateFormatter.russianDateTime.string(from: Date()))"
-
-            let titleAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 20, weight: .bold)]
-            let subtitleAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12)]
-
-            (title as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
-            y += 28
-            (subtitle as NSString).draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 60), withAttributes: subtitleAttributes)
-            y += 60
-
-            let contentWidth = pageRect.width - 2 * margin
-            let dateWidth   = contentWidth * 0.25
-            let timeWidth   = contentWidth * 0.15
-            let systWidth   = contentWidth * 0.2
-            let diastWidth  = contentWidth * 0.2
-            let pulseWidth  = contentWidth * 0.2
-            let rowHeight: CGFloat = 16
-
-            let headerAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)]
-            let rowAttributes: [NSAttributedString.Key: Any]    = [.font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)]
-
-            ("Дата"   as NSString).draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowHeight), withAttributes: headerAttributes)
-            ("Время"  as NSString).draw(in: CGRect(x: margin + dateWidth, y: y, width: timeWidth, height: rowHeight), withAttributes: headerAttributes)
-            ("Сист."  as NSString).draw(in: CGRect(x: margin + dateWidth + timeWidth, y: y, width: systWidth, height: rowHeight), withAttributes: headerAttributes)
-            ("Диаст." as NSString).draw(in: CGRect(x: margin + dateWidth + timeWidth + systWidth, y: y, width: diastWidth, height: rowHeight), withAttributes: headerAttributes)
-            ("Пульс"  as NSString).draw(in: CGRect(x: margin + dateWidth + timeWidth + systWidth + diastWidth, y: y, width: pulseWidth, height: rowHeight), withAttributes: headerAttributes)
-            y += rowHeight + 2
-
-            let dateFormatter = DateFormatter.russianDate
-            let timeFormatter = DateFormatter.russianTime
-
-            for record in records {
-                if y > pageRect.height - margin - 80 {
-                    context.beginPage()
-                    y = margin
-                }
-                let dateRect  = CGRect(x: margin, y: y, width: dateWidth, height: rowHeight)
-                let timeRect  = CGRect(x: margin + dateWidth, y: y, width: timeWidth, height: rowHeight)
-                let systRect  = CGRect(x: margin + dateWidth + timeWidth, y: y, width: systWidth, height: rowHeight)
-                let diastRect = CGRect(x: margin + dateWidth + timeWidth + systWidth, y: y, width: diastWidth, height: rowHeight)
-                let pulseRect = CGRect(x: margin + dateWidth + timeWidth + systWidth + diastWidth, y: y, width: pulseWidth, height: rowHeight)
-
-                (dateFormatter.string(from: record.date) as NSString).draw(in: dateRect, withAttributes: rowAttributes)
-                (timeFormatter.string(from: record.date) as NSString).draw(in: timeRect, withAttributes: rowAttributes)
-                ("\(record.systolic)"  as NSString).draw(in: systRect,  withAttributes: rowAttributes)
-                ("\(record.diastolic)" as NSString).draw(in: diastRect, withAttributes: rowAttributes)
-                ("\(record.pulse)"     as NSString).draw(in: pulseRect, withAttributes: rowAttributes)
-                y += rowHeight
-            }
-
-            let systolicValues  = records.map { Double($0.systolic) }
-            let diastolicValues = records.map { Double($0.diastolic) }
-            let pulseValues     = records.map { Double($0.pulse) }
-
-            func statsString(name: String, values: [Double]) -> String {
-                guard let min = values.min(), let max = values.max() else { return "" }
-                let avg = values.reduce(0, +) / Double(values.count)
-                return String(format: "%@: мин %.0f, макс %.0f, ср %.1f", name, min, max, avg)
-            }
-
-            y += 16
-            ("Итоги за период:" as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
-            y += 20
-
-            for line in [
-                statsString(name: "Систолическое", values: systolicValues),
-                statsString(name: "Диастолическое", values: diastolicValues),
-                statsString(name: "Пульс", values: pulseValues)
-            ] where !line.isEmpty {
-                (line as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: subtitleAttributes)
-                y += 16
-            }
-        }
-
-        _ = PDFDocument(data: data)
-        return data
     }
 }
 

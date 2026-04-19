@@ -5,8 +5,6 @@
 
 import SwiftUI
 import SwiftData
-import PDFKit
-import UIKit
 
 // MARK: - Weight Identifiable
 
@@ -23,12 +21,21 @@ struct WeightListView: View {
     @Query(sort: \Weight.date, order: .reverse)
     private var records: [Weight]
 
+    @Query private var profiles: [UserProfile]
+
     @State private var recordToEdit: Weight?
     @State private var recordToDelete: Weight?
     @State private var showDeleteConfirmation = false
     @State private var showExportDialog = false
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
+
+    private var patientDisplayName: String? {
+        guard let profile = profiles.first else { return nil }
+        var parts = [profile.name]
+        if let last = profile.lastName { parts.append(last) }
+        return parts.joined(separator: " ")
+    }
 
     private var calendar: Calendar {
         var cal = Calendar.current
@@ -172,58 +179,31 @@ struct WeightListView: View {
     @MainActor
     private func exportPDF(period: Int?) {
         let filtered: [Weight]
+        let periodDescription: String
         if let days = period {
             let from = Date().addingTimeInterval(Double(-days) * 86400)
             filtered = records.filter { $0.date >= from }
+            periodDescription = "за последние \(days) дней"
         } else {
             filtered = records
+            periodDescription = "за весь период наблюдения"
         }
         guard !filtered.isEmpty else { return }
 
-        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
-        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
-
-        let data = renderer.pdfData { context in
-            context.beginPage()
-            let margin: CGFloat = 32
-            var y: CGFloat = margin
-
-            let titleAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 20, weight: .bold)]
-            let bodyAttrs:  [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12)]
-            let rowAttrs:   [NSAttributedString.Key: Any] = [.font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)]
-
-            ("Отчёт по весу" as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttrs)
-            y += 28
-            ("Сформировано: \(DateFormatter.russianDateTime.string(from: Date()))" as NSString)
-                .draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 20), withAttributes: bodyAttrs)
-            y += 32
-
-            let contentWidth = pageRect.width - 2 * margin
-            let dateWidth    = contentWidth * 0.5
-            let valWidth     = contentWidth * 0.5
-            let rowH: CGFloat = 16
-
-            ("Дата и время" as NSString).draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowH), withAttributes: [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)])
-            ("Вес (кг)"     as NSString).draw(in: CGRect(x: margin + dateWidth, y: y, width: valWidth, height: rowH), withAttributes: [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)])
-            y += rowH + 2
-
-            for record in filtered {
-                if y > pageRect.height - margin - 20 {
-                    context.beginPage()
-                    y = margin
-                }
-                (DateFormatter.russianDateTime.string(from: record.date) as NSString)
-                    .draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowH), withAttributes: rowAttrs)
-                (formattedWeight(record.valueKg) as NSString)
-                    .draw(in: CGRect(x: margin + dateWidth, y: y, width: valWidth, height: rowH), withAttributes: rowAttrs)
-                y += rowH
-            }
+        let snapshot = filtered.map {
+            WeightPDFExporter.Record(date: $0.date, valueKg: $0.valueKg)
         }
-
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("WeightReport-\(UUID().uuidString).pdf")
-        try? data.write(to: url)
-        pdfURL = url
-        isSharePresented = true
+        let data = WeightPDFExporter.makeData(
+            records: snapshot,
+            periodDescription: periodDescription,
+            patientName: patientDisplayName
+        )
+        do {
+            pdfURL = try WeightPDFExporter.fileURL(from: data)
+            isSharePresented = true
+        } catch {
+            print("Failed to write PDF: \(error)")
+        }
     }
 }
 
