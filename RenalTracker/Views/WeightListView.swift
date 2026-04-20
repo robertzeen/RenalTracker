@@ -29,6 +29,7 @@ struct WeightListView: View {
     @State private var showExportDialog = false
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
+    @State private var isShowingNoDataAlert = false
 
     private var patientDisplayName: String? {
         guard let profile = profiles.first else { return nil }
@@ -147,6 +148,11 @@ struct WeightListView: View {
         } message: {
             Text("Это действие нельзя отменить.")
         }
+        .alert("Нет данных за выбранный период", isPresented: $isShowingNoDataAlert) {
+            Button("Закрыть", role: .cancel) { }
+        } message: {
+            Text("Добавьте записи или выберите другой период для экспорта.")
+        }
     }
 
     @ViewBuilder
@@ -188,7 +194,7 @@ struct WeightListView: View {
             filtered = records
             periodDescription = "за весь период наблюдения"
         }
-        guard !filtered.isEmpty else { return }
+        guard !filtered.isEmpty else { isShowingNoDataAlert = true; return }
 
         let snapshot = filtered.map {
             WeightPDFExporter.Record(date: $0.date, valueKg: $0.valueKg)

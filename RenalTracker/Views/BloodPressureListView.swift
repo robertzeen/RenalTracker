@@ -30,6 +30,7 @@ struct BloodPressureListView: View {
     @State private var showExportDialog = false
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
+    @State private var isShowingNoDataAlert = false
 
     private enum ExportPeriod {
         case days7, days30, all
@@ -154,6 +155,11 @@ struct BloodPressureListView: View {
         } message: {
             Text("Это действие нельзя отменить.")
         }
+        .alert("Нет данных за выбранный период", isPresented: $isShowingNoDataAlert) {
+            Button("Закрыть", role: .cancel) { }
+        } message: {
+            Text("Добавьте записи или выберите другой период для экспорта.")
+        }
     }
 
     @ViewBuilder
@@ -203,7 +209,7 @@ struct BloodPressureListView: View {
             periodDescription = "за весь период наблюдения"
         }
 
-        guard !filteredRecords.isEmpty else { return }
+        guard !filteredRecords.isEmpty else { isShowingNoDataAlert = true; return }
 
         let snapshot = filteredRecords.map {
             BloodPressurePDFExporter.Record(

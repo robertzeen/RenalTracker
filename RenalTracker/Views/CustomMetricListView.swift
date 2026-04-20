@@ -19,6 +19,7 @@ struct CustomMetricListView: View {
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
     @State private var isGeneratingPDF = false
+    @State private var isShowingNoDataAlert = false
 
     private var sortedEntries: [CustomMetricEntry] {
         metric.entries.sorted { $0.date > $1.date }
@@ -58,7 +59,7 @@ struct CustomMetricListView: View {
 
     @MainActor
     private func exportToPDF() {
-        guard !sortedEntries.isEmpty else { return }
+        guard !sortedEntries.isEmpty else { isShowingNoDataAlert = true; return }
         isGeneratingPDF = true
 
         // Извлекаем все данные из @Model на главном потоке до Task.detached
@@ -200,6 +201,11 @@ struct CustomMetricListView: View {
             }
         } message: {
             Text("Это действие нельзя отменить.")
+        }
+        .alert("Нет данных за выбранный период", isPresented: $isShowingNoDataAlert) {
+            Button("Закрыть", role: .cancel) { }
+        } message: {
+            Text("Добавьте записи или выберите другой период для экспорта.")
         }
     }
 }

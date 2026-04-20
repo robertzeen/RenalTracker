@@ -6,7 +6,6 @@
 import SwiftUI
 import SwiftData
 import Charts
-import PDFKit
 import UIKit
 
 // MARK: - Lab Test Detail View
@@ -18,12 +17,25 @@ struct LabTestDetailView: View, Identifiable {
     let id = UUID()
     let test: TrackedLabTest
 
+    @Query private var profiles: [UserProfile]
+
     @State private var isShowingAddResult = false
     @State private var isShowingEditReferences = false
     @State private var resultToEdit: LabResult?
     @State private var isShowingShareSheet = false
     @State private var pdfURL: URL?
     @State private var resultToDelete: LabResult?
+    @State private var isShowingNoDataAlert = false
+
+    private var patientDisplayName: String {
+        guard let profile = profiles.first else { return "не указан" }
+        let name = profile.name.trimmingCharacters(in: .whitespaces)
+        let last = profile.lastName?.trimmingCharacters(in: .whitespaces) ?? ""
+        if !name.isEmpty && !last.isEmpty { return "\(name) \(last)" }
+        if !name.isEmpty { return name }
+        if !last.isEmpty { return last }
+        return "не указан"
+    }
 
     private var sortedResults: [LabResult] {
         test.results.sorted { $0.date < $1.date }
@@ -196,6 +208,11 @@ struct LabTestDetailView: View, Identifiable {
         } message: {
             Text("Это действие нельзя отменить.")
         }
+        .alert("Нет данных за выбранный период", isPresented: $isShowingNoDataAlert) {
+            Button("Закрыть", role: .cancel) { }
+        } message: {
+            Text("Добавьте записи или выберите другой период для экспорта.")
+        }
     }
 
     // MARK: - PDF Export
@@ -203,95 +220,39 @@ struct LabTestDetailView: View, Identifiable {
     @MainActor
     private func exportPDF() {
         let results = sortedResults
-        guard !results.isEmpty else { return }
-        guard let data = generatePDFData(test: test, results: results) else { return }
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("LabReport-\(UUID().uuidString).pdf")
+        guard !results.isEmpty else { isShowingNoDataAlert = true; return }
+
+        let resultsSnapshot: [LabTestDetailPDFExporter.Result] = results.map {
+            .init(date: $0.date, value: $0.value)
+        }
+        let testName = test.name
+        let testUnit = test.unit
+        let name = patientDisplayName
+
+        let chartImage: UIImage? = {
+            guard results.count >= 2 else { return nil }
+            let points = resultsSnapshot.map { PDFLabChartView.Point(date: $0.date, value: $0.value) }
+            let chart = PDFLabChartView(points: points)
+            let renderer = ImageRenderer(content: chart)
+            renderer.proposedSize = ProposedViewSize(width: 530, height: 240)
+            return renderer.uiImage
+        }()
+
+        let data = LabTestDetailPDFExporter.makeData(
+            testName: testName,
+            unit: testUnit,
+            results: resultsSnapshot,
+            periodDescription: nil,
+            patientName: name,
+            chartImage: chartImage
+        )
+
         do {
-            try data.write(to: tempURL)
-            pdfURL = tempURL
+            let url = try PDFExporter.saveToTempFile(data: data, fileNamePrefix: "Lab-\(testName)")
+            pdfURL = url
         } catch {
-            print("Failed to write PDF: \(error)")
+            print("Failed to save lab PDF: \(error)")
         }
-    }
-
-    @MainActor
-    private func generatePDFData(test: TrackedLabTest, results: [LabResult]) -> Data? {
-        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
-        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
-
-        let data = renderer.pdfData { context in
-            context.beginPage()
-            let margin: CGFloat = 32
-            var y: CGFloat = margin
-
-            let title    = "Отчёт по анализу: \(test.name)"
-            let subtitle = "Единица измерения: \(test.unit)\nСформировано: \(DateFormatter.russianDateTime.string(from: Date()))"
-
-            let titleAttributes:    [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 20, weight: .bold)]
-            let subtitleAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12)]
-
-            (title as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
-            y += 28
-            (subtitle as NSString).draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: 50), withAttributes: subtitleAttributes)
-            y += 56
-
-            let chartView = PDFLabChartView(test: test, results: results)
-            let chartRenderer = ImageRenderer(content: chartView)
-            chartRenderer.proposedSize = .init(width: 500, height: 200)
-            if let chartImage = chartRenderer.uiImage {
-                let chartHeight: CGFloat = 160
-                chartImage.draw(in: CGRect(x: margin, y: y, width: pageRect.width - 2 * margin, height: chartHeight))
-                y += chartHeight + 16
-            }
-
-            let contentWidth = pageRect.width - 2 * margin
-            let dateWidth    = contentWidth * 0.4
-            let valueWidth   = contentWidth * 0.6
-            let rowHeight: CGFloat = 16
-
-            let headerAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12, weight: .semibold)]
-            let rowAttributes:    [NSAttributedString.Key: Any] = [.font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)]
-
-            ("Дата"     as NSString).draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowHeight), withAttributes: headerAttributes)
-            ("Значение" as NSString).draw(in: CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight), withAttributes: headerAttributes)
-            y += rowHeight + 2
-
-            let dateFormatter = DateFormatter.russianDate
-
-            for result in results.sorted(by: { $0.date > $1.date }) {
-                if y > pageRect.height - margin - 80 {
-                    context.beginPage()
-                    y = margin
-                }
-                let valueWithUnit = test.unit.isEmpty
-                    ? String(format: "%.2f", result.value)
-                    : String(format: "%.2f %@", result.value, test.unit)
-
-                (dateFormatter.string(from: result.date) as NSString).draw(in: CGRect(x: margin, y: y, width: dateWidth, height: rowHeight), withAttributes: rowAttributes)
-                (valueWithUnit as NSString).draw(in: CGRect(x: margin + dateWidth, y: y, width: valueWidth, height: rowHeight), withAttributes: rowAttributes)
-                y += rowHeight
-            }
-
-            let values = results.map { $0.value }
-            if let minVal = values.min(), let maxVal = values.max() {
-                let avg = values.reduce(0, +) / Double(values.count)
-                y += 18
-                ("Итоги за период:" as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: titleAttributes)
-                y += 20
-                for line in [
-                    String(format: "Минимум: %.2f %@", minVal, test.unit),
-                    String(format: "Максимум: %.2f %@", maxVal, test.unit),
-                    String(format: "Среднее: %.2f %@", avg, test.unit)
-                ] {
-                    (line as NSString).draw(at: CGPoint(x: margin, y: y), withAttributes: subtitleAttributes)
-                    y += 16
-                }
-            }
-        }
-
-        _ = PDFDocument(data: data)
-        return data
     }
 }
 
@@ -612,33 +573,6 @@ private struct EditReferenceRangeSheet: View {
         test.referenceMax = Double(maxText.replacingOccurrences(of: ",", with: "."))
         test.unit         = unitText.trimmingCharacters(in: .whitespaces)
         try? modelContext.save()
-    }
-}
-
-// MARK: - PDF Chart View
-
-private struct PDFLabChartView: View {
-    let test: TrackedLabTest
-    let results: [LabResult]
-
-    var body: some View {
-        let sorted  = results.sorted { $0.date < $1.date }
-        let values  = sorted.map { $0.value }
-        let minVal  = values.min() ?? 0
-        let maxVal  = values.max() ?? 0
-        let padding = (maxVal - minVal) * 0.1
-        let minY    = max(0, minVal - padding)
-        let maxY    = maxVal + padding
-
-        return Chart {
-            ForEach(sorted) { result in
-                LineMark(x: .value("Дата", result.date), y: .value("Значение", result.value)).foregroundStyle(.blue)
-                PointMark(x: .value("Дата", result.date), y: .value("Значение", result.value)).foregroundStyle(.blue)
-            }
-        }
-        .chartYScale(domain: minY...maxY)
-        .frame(height: 200)
-        .padding()
     }
 }
 

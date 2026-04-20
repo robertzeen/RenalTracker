@@ -62,6 +62,9 @@
 		32D6B35C2F9547E30032C065 /* CustomMetricPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3592F9547E20032C065 /* CustomMetricPDFExporter.swift */; };
 		32D6B35D2F9547E30032C065 /* BloodPressurePDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B35A2F9547E20032C065 /* BloodPressurePDFExporter.swift */; };
 		32D6B35E2F9547E30032C065 /* WeightPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B35B2F9547E30032C065 /* WeightPDFExporter.swift */; };
+		32D6B3622F9626240032C065 /* LabResultsPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B35F2F9626240032C065 /* LabResultsPDFExporter.swift */; };
+		32D6B3632F9626240032C065 /* PDFLabChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3602F9626240032C065 /* PDFLabChartView.swift */; };
+		32D6B3642F9626240032C065 /* LabTestDetailPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3612F9626240032C065 /* LabTestDetailPDFExporter.swift */; };
 		RT0012F5360F30063D338 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0011F5360F30063D338 /* UserProfile.swift */; };
 		RT0022F5360F30063D338 /* BloodPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0021F5360F30063D338 /* BloodPressure.swift */; };
 		RT0032F5360F30063D338 /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0031F5360F30063D338 /* Weight.swift */; };
@@ -153,6 +156,9 @@
 		32D6B3592F9547E20032C065 /* CustomMetricPDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomMetricPDFExporter.swift; sourceTree = "<group>"; };
 		32D6B35A2F9547E20032C065 /* BloodPressurePDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BloodPressurePDFExporter.swift; sourceTree = "<group>"; };
 		32D6B35B2F9547E30032C065 /* WeightPDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WeightPDFExporter.swift; sourceTree = "<group>"; };
+		32D6B35F2F9626240032C065 /* LabResultsPDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LabResultsPDFExporter.swift; sourceTree = "<group>"; };
+		32D6B3602F9626240032C065 /* PDFLabChartView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PDFLabChartView.swift; sourceTree = "<group>"; };
+		32D6B3612F9626240032C065 /* LabTestDetailPDFExporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LabTestDetailPDFExporter.swift; sourceTree = "<group>"; };
 		RT0011F5360F30063D338 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		RT0021F5360F30063D338 /* BloodPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressure.swift; sourceTree = "<group>"; };
 		RT0031F5360F30063D338 /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
@@ -298,6 +304,9 @@
 		32D6B3542F9541230032C065 /* PDFExport */ = {
 			isa = PBXGroup;
 			children = (
+				32D6B35F2F9626240032C065 /* LabResultsPDFExporter.swift */,
+				32D6B3612F9626240032C065 /* LabTestDetailPDFExporter.swift */,
+				32D6B3602F9626240032C065 /* PDFLabChartView.swift */,
 				32D6B35A2F9547E20032C065 /* BloodPressurePDFExporter.swift */,
 				32D6B3592F9547E20032C065 /* CustomMetricPDFExporter.swift */,
 				32D6B35B2F9547E30032C065 /* WeightPDFExporter.swift */,
@@ -510,6 +519,8 @@
 				32C32F132F5583540063D338 /* PreviewData.swift in Sources */,
 				32A15D2B2F72E15A00C94C43 /* LabTestSheet.swift in Sources */,
 				3221BDB82F922D130072851D /* SettingsTreatmentSection.swift in Sources */,
+				32D6B3642F9626240032C065 /* LabTestDetailPDFExporter.swift in Sources */,
+				32D6B3622F9626240032C065 /* LabResultsPDFExporter.swift in Sources */,
 				32A15D2D2F72E55500C94C43 /* AddDoctorVisitView.swift in Sources */,
 				RT0012F5360F30063D338 /* UserProfile.swift in Sources */,
 				3279F3082F7335C4007186B5 /* WeightCardView.swift in Sources */,
@@ -534,6 +545,7 @@
 				32C32F282F576AEE0063D338 /* DoctorVisit.swift in Sources */,
 				3279F30E2F7335C4007186B5 /* HomeQuoteView.swift in Sources */,
 				RT0062F5360F30063D338 /* WellBeing.swift in Sources */,
+				32D6B3632F9626240032C065 /* PDFLabChartView.swift in Sources */,
 				3238897D2F8A55DE000680B2 /* AddCustomMetricEntrySheet.swift in Sources */,
 				RT0072F5360F30063D338 /* HomeView.swift in Sources */,
 				32C32F152F55BCE60063D338 /* TrackedLabTest.swift in Sources */,
