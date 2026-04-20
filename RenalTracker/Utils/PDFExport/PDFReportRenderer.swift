@@ -90,12 +90,20 @@ final class PDFReportRenderer {
     ///
     /// Автоматически переносит на новую страницу и повторяет заголовки.
     /// rowHeight фиксирован 16pt. Нижний отступ после таблицы 16pt.
-    func drawTable(headers: [String], columnWidthFractions: [CGFloat], rows: [[String]]) {
+    func drawTable(
+        headers: [String],
+        columnWidthFractions: [CGFloat],
+        rows: [[String]],
+        monospaced: Bool = true
+    ) {
         guard headers.count == columnWidthFractions.count else { return }
 
         let contentWidth  = pageRect.width - 2 * margin
         let totalFractions = columnWidthFractions.reduce(0, +)
         let columnWidths  = columnWidthFractions.map { $0 / totalFractions * contentWidth }
+        let rowFontToUse: UIFont = monospaced
+            ? rowFont
+            : UIFont.systemFont(ofSize: 11, weight: .regular)
 
         func drawHeaderRow() {
             var x = margin
@@ -121,7 +129,7 @@ final class PDFReportRenderer {
             for (i, cell) in row.enumerated() where i < columnWidths.count {
                 (cell as NSString).draw(
                     in: CGRect(x: x, y: y, width: columnWidths[i], height: 16),
-                    withAttributes: [.font: rowFont]
+                    withAttributes: [.font: rowFontToUse]
                 )
                 x += columnWidths[i]
             }

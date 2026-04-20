@@ -291,14 +291,22 @@ struct MedicationsView: View {
     // MARK: - PDF Export
 
     private func generateAndSharePDF() async {
-        let snapshot = await MainActor.run { () -> ([Medication], String) in
-            (activeMedicationsSortedByTime, patientDisplayName)
+        // Снимок ТОЛЬКО value-type данных на главном потоке — до Task.detached
+        let snapshot = await MainActor.run { () -> ([MedicationsPDFExporter.Row], String) in
+            let rows = activeMedicationsSortedByTime.map { med in
+                MedicationsPDFExporter.Row(
+                    name: med.name,
+                    dosage: med.formattedDosage.isEmpty ? "—" : med.formattedDosage,
+                    time: DateFormatter.russianTime.string(from: med.time)
+                )
+            }
+            return (rows, patientDisplayName)
         }
-        let (meds, patient) = snapshot
-        guard !meds.isEmpty else { return }
+        let (rows, patient) = snapshot
+        guard !rows.isEmpty else { return }
 
         let dataOpt = await Task.detached(priority: .userInitiated) {
-            MedicationsPDFExporter.generateData(meds: meds, patientName: patient)
+            MedicationsPDFExporter.generateData(rows: rows, patientName: patient)
         }.value
 
         guard let data = dataOpt else { return }
