@@ -101,16 +101,13 @@ final class NotificationManager {
     /// Полностью пересоздаёт уведомления по приёму лекарств.
     /// Вызывать при изменении списка лекарств или их расписания.
     func rescheduleMedicationNotifications(for medications: [Medication]) {
-        // Сбрасываем кэш ID перед пересозданием
-        UserDefaults.standard.removeObject(forKey: "_scheduledMedIDs")
-
         center.getPendingNotificationRequests { [weak self] requests in
             guard let self = self else { return }
             let medIds = requests.map(\.identifier).filter { $0.hasPrefix("med_") }
             self.center.removePendingNotificationRequests(withIdentifiers: medIds)
 
             // Создаём новые уведомления только если они включены
-            let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+            let enabled = UserDefaults.standard.object(forKey: AppStorageKeys.notificationsEnabled) as? Bool ?? true
             guard enabled else { return }
             self.scheduleNotifications(for: medications)
         }
@@ -175,7 +172,7 @@ final class NotificationManager {
         content.body = body
         content.badge = 1
 
-        let critical = UserDefaults.standard.bool(forKey: "criticalNotificationsEnabled")
+        let critical = UserDefaults.standard.bool(forKey: AppStorageKeys.criticalNotificationsEnabled)
         if critical {
             content.interruptionLevel = .timeSensitive
             content.sound = .defaultCriticalSound(withAudioVolume: 0.8)
@@ -194,13 +191,6 @@ final class NotificationManager {
         let identifier = "med_\(key.weekday)_\(key.hour)_\(key.minute)"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
         center.add(request, withCompletionHandler: nil)
-
-        // Сохраняем ID для синхронного доступа через medicationIdentifiers()
-        var stored = UserDefaults.standard.stringArray(forKey: "_scheduledMedIDs") ?? []
-        if !stored.contains(identifier) {
-            stored.append(identifier)
-            UserDefaults.standard.set(stored, forKey: "_scheduledMedIDs")
-        }
     }
 
     private func dosageDescription(for med: Medication) -> String {
@@ -219,11 +209,11 @@ final class NotificationManager {
 
         let defaults = UserDefaults.standard
 
-        if defaults.bool(forKey: "bpReminderEnabled") {
+        if defaults.bool(forKey: AppStorageKeys.bpReminderEnabled) {
             let morningDefault = Calendar.current.date(from: DateComponents(hour: 8,  minute: 0))  ?? Date()
             let eveningDefault = Calendar.current.date(from: DateComponents(hour: 20, minute: 0))  ?? Date()
-            let morning = defaults.object(forKey: "bpMorningReminderTime") as? Date ?? morningDefault
-            let evening = defaults.object(forKey: "bpEveningReminderTime") as? Date ?? eveningDefault
+            let morning = defaults.object(forKey: AppStorageKeys.bpMorningReminderTime) as? Date ?? morningDefault
+            let evening = defaults.object(forKey: AppStorageKeys.bpEveningReminderTime) as? Date ?? eveningDefault
             scheduleDaily(
                 id: "bp_morning",
                 time: morning,
@@ -238,9 +228,9 @@ final class NotificationManager {
             )
         }
 
-        if defaults.bool(forKey: "weightReminderEnabled") {
+        if defaults.bool(forKey: AppStorageKeys.weightReminderEnabled) {
             let weightDefault = Calendar.current.date(from: DateComponents(hour: 7, minute: 30)) ?? Date()
-            let time = defaults.object(forKey: "weightReminderTime") as? Date ?? weightDefault
+            let time = defaults.object(forKey: AppStorageKeys.weightReminderTime) as? Date ?? weightDefault
             scheduleDaily(
                 id: "weight_reminder",
                 time: time,
@@ -265,18 +255,12 @@ final class NotificationManager {
 
     // MARK: - Управление уведомлениями о лекарствах
 
-    /// Синхронно возвращает сохранённые идентификаторы уведомлений о лекарствах.
-    func medicationIdentifiers() -> [String] {
-        UserDefaults.standard.stringArray(forKey: "_scheduledMedIDs") ?? []
-    }
-
     /// Отменяет все уведомления о лекарствах асинхронно.
     func disableMedicationNotifications() {
         center.getPendingNotificationRequests { [weak self] requests in
             guard let self else { return }
             let ids = requests.map(\.identifier).filter { $0.hasPrefix("med_") }
             self.center.removePendingNotificationRequests(withIdentifiers: ids)
-            UserDefaults.standard.removeObject(forKey: "_scheduledMedIDs")
         }
     }
 
@@ -284,10 +268,10 @@ final class NotificationManager {
     /// уведомлений о лекарствах без необходимости доступа к SwiftData.
     func updateNotifications() {
         // Если уведомления выключены пользователем — ничего не делаем
-        let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+        let enabled = UserDefaults.standard.object(forKey: AppStorageKeys.notificationsEnabled) as? Bool ?? true
         guard enabled else { return }
 
-        let critical = UserDefaults.standard.bool(forKey: "criticalNotificationsEnabled")
+        let critical = UserDefaults.standard.bool(forKey: AppStorageKeys.criticalNotificationsEnabled)
 
         center.getPendingNotificationRequests { [weak self] requests in
             guard let self else { return }

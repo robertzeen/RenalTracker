@@ -17,7 +17,7 @@ struct LabTestSheet: View {
     @State private var labLocation: String = ""
     @State private var showDatePicker = false
     @State private var showTimePicker = false
-    @AppStorage("labCalendarAddedTimestamp") private var calendarAddedTimestamp: Double = 0
+    @AppStorage(AppStorageKeys.labCalendarAddedTimestamp) private var calendarAddedTimestamp: Double = 0
 
     init(userProfile: UserProfile?) {
         self.userProfile = userProfile

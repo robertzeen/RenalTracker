@@ -10,10 +10,10 @@ import SwiftUI
 import UserNotifications
 
 struct SettingsNotificationsSection: View {
-    @AppStorage("notificationsEnabled") var notificationsEnabled = true
-    @AppStorage("criticalNotificationsEnabled") var criticalNotificationsEnabled = false
-    @AppStorage("bpReminderEnabled") var bpReminderEnabled = false
-    @AppStorage("weightReminderEnabled") var weightReminderEnabled = false
+    @AppStorage(AppStorageKeys.notificationsEnabled) var notificationsEnabled = true
+    @AppStorage(AppStorageKeys.criticalNotificationsEnabled) var criticalNotificationsEnabled = false
+    @AppStorage(AppStorageKeys.bpReminderEnabled) var bpReminderEnabled = false
+    @AppStorage(AppStorageKeys.weightReminderEnabled) var weightReminderEnabled = false
 
     @State private var bpMorningTime: Date
     @State private var bpEveningTime: Date
@@ -24,11 +24,11 @@ struct SettingsNotificationsSection: View {
     @State private var showWeightPicker = false
 
     init() {
-        _bpMorningTime = State(initialValue: UserDefaults.standard.object(forKey: "bpMorningReminderTime") as? Date
+        _bpMorningTime = State(initialValue: UserDefaults.standard.object(forKey: AppStorageKeys.bpMorningReminderTime) as? Date
             ?? Calendar.current.date(from: DateComponents(hour: 8, minute: 0)) ?? Date())
-        _bpEveningTime = State(initialValue: UserDefaults.standard.object(forKey: "bpEveningReminderTime") as? Date
+        _bpEveningTime = State(initialValue: UserDefaults.standard.object(forKey: AppStorageKeys.bpEveningReminderTime) as? Date
             ?? Calendar.current.date(from: DateComponents(hour: 20, minute: 0)) ?? Date())
-        _weightReminderTime = State(initialValue: UserDefaults.standard.object(forKey: "weightReminderTime") as? Date
+        _weightReminderTime = State(initialValue: UserDefaults.standard.object(forKey: AppStorageKeys.weightReminderTime) as? Date
             ?? Calendar.current.date(from: DateComponents(hour: 7, minute: 30)) ?? Date())
     }
 
@@ -141,7 +141,7 @@ struct SettingsNotificationsSection: View {
                             .environment(\.locale, Locale(identifier: "ru_RU"))
                             .frame(maxWidth: .infinity)
                             .onChange(of: bpMorningTime) { _, _ in
-                                UserDefaults.standard.set(bpMorningTime, forKey: "bpMorningReminderTime")
+                                UserDefaults.standard.set(bpMorningTime, forKey: AppStorageKeys.bpMorningReminderTime)
                                 NotificationManager.shared.scheduleMeasurementReminders()
                             }
                     }
@@ -175,7 +175,7 @@ struct SettingsNotificationsSection: View {
                             .environment(\.locale, Locale(identifier: "ru_RU"))
                             .frame(maxWidth: .infinity)
                             .onChange(of: bpEveningTime) { _, _ in
-                                UserDefaults.standard.set(bpEveningTime, forKey: "bpEveningReminderTime")
+                                UserDefaults.standard.set(bpEveningTime, forKey: AppStorageKeys.bpEveningReminderTime)
                                 NotificationManager.shared.scheduleMeasurementReminders()
                             }
                     }
@@ -231,7 +231,7 @@ struct SettingsNotificationsSection: View {
                             .environment(\.locale, Locale(identifier: "ru_RU"))
                             .frame(maxWidth: .infinity)
                             .onChange(of: weightReminderTime) { _, _ in
-                                UserDefaults.standard.set(weightReminderTime, forKey: "weightReminderTime")
+                                UserDefaults.standard.set(weightReminderTime, forKey: AppStorageKeys.weightReminderTime)
                                 NotificationManager.shared.scheduleMeasurementReminders()
                             }
                     }

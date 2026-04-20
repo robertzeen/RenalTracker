@@ -515,8 +515,6 @@ struct OnboardingView: View {
         modelContext.insert(profile)
         try? modelContext.save()
 
-        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-
         onComplete()
     }
 }

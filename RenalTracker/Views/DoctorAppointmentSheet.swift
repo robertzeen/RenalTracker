@@ -17,7 +17,7 @@ struct DoctorAppointmentSheet: View {
     @State private var doctorName: String
     @State private var showDatePicker = false
     @State private var showTimePicker = false
-    @AppStorage("doctorCalendarAddedTimestamp") private var calendarAddedTimestamp: Double = 0
+    @AppStorage(AppStorageKeys.doctorCalendarAddedTimestamp) private var calendarAddedTimestamp: Double = 0
 
     init(userProfile: UserProfile?) {
         self.userProfile = userProfile
