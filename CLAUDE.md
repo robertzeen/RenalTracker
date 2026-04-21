@@ -20,26 +20,48 @@ iOS приложение для пациентов на гемодиализе, 
 - Главный экран (дашборд с метриками, лекарствами, событиями, цитатой)
 - Метрики: АД, пульс, вес — графики, история, PDF экспорт
 - Анализы: каталог (16 тестов) + кастомные, графики, PDF экспорт
-- Лекарства: расписание, отметка приёма, свайп-действия, PDF экспорт
+- Лекарства: расписание, отметка приёма, свайп-действия, PDF экспорт с разбивкой по времени приёма
 - Визиты к врачу: история, детали, добавление/редактирование
 - Настройки: профиль, статус лечения, уведомления, управление кастомными метриками
 - Уведомления: лекарства, АД, вес, визиты, анализы
-- Модели CustomMetric и CustomMetricEntry добавлены в SwiftData-схему
 - Каталог кастомных метрик (CustomMetricCatalog, 7 метрик)
 - SwiftData версионирование отложено до первого релиза; `ModelContainer` использует прямой `Schema([...])` со всеми 11 моделями, без `migrationPlan`
+
 - **CustomMetrics UI** — полностью реализован:
   - SettingsView: раздел "ДОПОЛНИТЕЛЬНЫЕ ПОКАЗАТЕЛИ" — включение/выключение из каталога, добавление своих
   - IndicatorsView: карточки активных метрик с графиком (LineMark+catmullRom), синхронизированный ChartPeriod picker
   - CustomMetricListView: история записей по месяцам, свайп-удаление, PDF экспорт со статистикой
   - AddCustomMetricEntrySheet: ввод значения + дата/время
   - AddCustomMetricView: создание кастомной метрики (имя, единица, иконка из сетки SF Symbols)
-- Переименование вкладки "Показатели" → "Метрики" во всех 6 файлах
 
-- **Рефакторинг MedicationsView** — 4 шага без изменения поведения:
-  - Шаг 1: `WeekdayPickerView` — выделен из `AddMedicationSheet` и `EditMedicationSheet`, устранено дублирование ~70 строк
-  - Шаг 2: `MedicationsPDFExporter` — две чистые функции генерации PDF вынесены в отдельный `enum`, `MedicationsView` избавился от `import PDFKit/UIKit`
-  - Шаг 3: `medicationRow(med:)` — инлайн-строка списка (~47 строк) вынесена в `@ViewBuilder` func внутри `MedicationsView`
-  - Шаг 4: `emptyStateView` — пустое состояние вынесено в `@ViewBuilder var` внутри `MedicationsView`
+- **Рефакторинг MedicationsView** (4 шага без изменения поведения):
+  - `WeekdayPickerView` — выделен в `Views/Medications/WeekdayPickerView.swift`, устранено дублирование ~70 строк
+  - `MedicationsPDFExporter` — вынесен в отдельный `enum`, `MedicationsView` избавился от `import PDFKit/UIKit`
+  - `medicationRow(med:)` — инлайн-строка списка вынесена в `@ViewBuilder` func
+  - `emptyStateView` — пустое состояние вынесено в `@ViewBuilder var`
+
+- **Рефакторинг общей инфраструктуры**:
+  - `ContentView` — убрано мерцание OnboardingView при cold start: удалён промежуточный `@State`, проверка теперь напрямую из `@Query`
+  - `MedicationScheduleCalculator` — чистый value-type struct, устранено дублирование логики расписания (`todaysMedications`, `todayScheduleGroups`, `intakeForToday`, `takenCount`, `allTaken`, `nextUpcomingGroup`) из HomeView и MedicationsView. Инъекция `now` и `calendar` для тестируемости.
+  - `SettingsView` разбит на 5 файлов в `Views/Settings/`: контейнер + 4 секции (Personal/Treatment/Notifications/CustomMetrics); с 743 строк до ~200 × 4
+  - `AppStorageKeys` enum — все UserDefaults-ключи типизированы, защита от опечаток. Удалён мёртвый ключ `hasCompletedOnboarding` из OnboardingView.
+  - `NotificationManager` state-free: методы `scheduleMeasurementReminders(_:)`, `updateNotifications(enabled:critical:)`, `rescheduleMedicationNotifications(for:enabled:critical:)` принимают настройки явно как параметры. Устранена скрытая race condition при вызове из `.onChange`. Новая value-type `ReminderSettings` бандлит 5 настроек. NotificationManager больше не зависит от UserDefaults/AppStorageKeys.
+  - Удалён мёртвый кэш `_scheduledMedIDs` и метод `medicationIdentifiers()` из NotificationManager.
+
+- **Универсальная PDF-инфраструктура**:
+  - `Utils/PDFExport/PDFReportRenderer` — низкоуровневый A4-рендерер, единое место шрифтов/геометрии. Методы: `drawHeader(reportTitle:patientName:periodDescription:)`, `drawChart(_:height:)`, `drawTable(headers:columnWidthFractions:rows:monospaced:)`, `drawSectionTitle`, `drawLines`, `drawStats`, `beginNewPageIfNeeded`, `spacer`. Параметр `monospaced: Bool = true` (false для текстовых таблиц типа лекарств).
+  - `Utils/PDFExport/PDFExporter` — обёртка над `UIGraphicsPDFRenderer` + сохранение в /tmp. `makeData(draw:)` и `saveToTempFile(data:fileNamePrefix:)`.
+  - 6 конкретных exporter'ов (`BloodPressure`, `Weight`, `CustomMetric`, `LabTestDetail`, `LabResults`, `Medications`), каждый ~40-50 строк. Единая шапка: «Отчёт по X / Пациент: ФИО / Период: … / Сформировано: …».
+  - `PDFLabChartView` — общий SwiftUI-чарт для лабораторных PDF, принимает value-type `[Point]`, выносится в UIImage через `ImageRenderer` на главном потоке.
+  - Value-snapshot паттерн везде: @Model-объекты не пересекают границу `Task.detached`, только String/Double/Date.
+  - Alert «Не удалось сформировать отчёт» при любой ошибке экспорта во всех 6 view (вместо молчания).
+  - Alert «Нет данных за выбранный период» в 5 view при пустом фильтре (вместо молчаливого `guard`).
+  - Инлайн-код генерации PDF в View удалён (~300 строк). `import PDFKit` / `import UIKit` ушли из 4 View.
+  - MedicationsPDFExporter: разбивка по времени приёма — каждая группа в отдельной секции с заголовком времени, таблица (Препарат / Дозировка).
+
+- **Единый компонент пустых состояний** — `EmptyStatePlaceholder`: эмодзи в голубом круге + заголовок + описание + tinted-кнопка. Используется в DoctorVisitsView (🏥), MedicationsView (💊), LabResultsView (🧪). Старый стиль (`largeTitle` + `buttonStyle(.borderedProminent)`) полностью удалён.
+
+- Переименование вкладки "Показатели" → "Метрики" во всех 6 файлах
 
 ### В работе / Незавершено
 - **WellBeing** — модель есть (`weakness`, `headache`, `swelling`), UI отсутствует
@@ -52,42 +74,46 @@ iOS приложение для пациентов на гемодиализе, 
 
 | Файл | Назначение |
 |------|-----------|
-| `ContentView.swift` | Корневой view: онбординг или MainTabView (по `hasCompletedOnboarding`) |
-| `MainTabView.swift` | TabView с 5 вкладками, `selectedTab: Int` |
+| `ContentView.swift` | Корневой view: онбординг или MainTabView; проверка `profiles.contains(where: hasCompletedOnboarding)` напрямую из `@Query` |
+| `MainTabView.swift` | TabView с 5 вкладками |
 | `OnboardingView.swift` | 5-шаговый онбординг: 3 intro-слайда, личные данные, статус лечения |
-| `HomeView.swift` | Дашборд: приветствие, последние метрики, лекарства на сегодня, события, цитата; Timer каждые 60 сек |
+| `HomeView.swift` | Дашборд: приветствие, последние метрики, лекарства на сегодня, события, цитата; Timer каждые 60 сек. Использует `MedicationScheduleCalculator` с `now: currentTime`. |
 | `HomeGreetingView.swift` | Приветствие + имя + статус ("День N после трансплантации") |
 | `HomeMetricsView.swift` | Последние значения АД и веса с датами |
-| `HomeEventsView.swift` | Ближайший визит и дата анализа с бейджами (сегодня/завтра/через N дней) |
+| `HomeEventsView.swift` | Ближайший визит и дата анализа с бейджами |
 | `HomeQuoteView.swift` | Мотивационная цитата (ротация по дню года из `Quotes.swift`) |
 | `HomeMedicationsView.swift` | Расписание лекарств на сегодня для главного экрана |
-| `IndicatorsView.swift` | Графики АД/пульса/веса + активные кастомные метрики, фильтры 7/30/все; `ChartPeriod` picker |
+| `IndicatorsView.swift` | Графики АД/пульса/веса + активные кастомные метрики, фильтры 7/30/все |
 | `BloodPressureCardView.swift` | Карточка с графиком систолического/диастолического + пульс |
 | `PulseCardView.swift` | Карточка с графиком пульса |
 | `WeightCardView.swift` | Карточка с графиком веса |
-| `BloodPressureListView.swift` | Полная история измерений АД + редактирование + PDF экспорт |
-| `WeightListView.swift` | Полная история измерений веса + редактирование + PDF экспорт |
-| `LabResultsView.swift` | Список отслеживаемых анализов, опции экспорта (один/все) |
-| `LabTestDetailView.swift` | Детали анализа: график, статистика, история, редактирование норм, PDF |
+| `BloodPressureListView.swift` | История АД + редактирование + PDF через `BloodPressurePDFExporter` |
+| `WeightListView.swift` | История веса + редактирование + PDF через `WeightPDFExporter` |
+| `LabResultsView.swift` | Список отслеживаемых анализов, опции экспорта (один/все) через `LabResultsPDFExporter` и `LabTestDetailPDFExporter`. Empty state через `EmptyStatePlaceholder` (🧪) |
+| `LabTestDetailView.swift` | Детали анализа: график, статистика, история, редактирование норм, PDF через `LabTestDetailPDFExporter` |
 | `AddTrackedLabTestSheet.swift` | Добавление анализа из каталога или кастомного; защита от дублей |
 | `LabTestCatalog.swift` | 16 предустановленных анализов с референсными значениями |
 | `CustomMetricCatalog.swift` | 7 предустановленных кастомных метрик здоровья |
-| `MedicationsView.swift` | Расписание приёма лекарств по времени, чекбоксы, свайп (удалить/изменить), PDF; содержит `AddMedicationSheet`, `EditMedicationSheet` |
-| `MedicationScheduleComponents.swift` | Общие компоненты: `MedicationTodayProgressCard`, `MedicationTimeSlotHeader`, `MedicationScheduleRow`, `MedicationScheduleFormat` |
-| `Medications1/Components/WeekdayPickerView.swift` | Пикер дней недели (`@Binding<Set<Int>>`); `WeekdayOption` и `allWeekdayOptions` определены здесь — единственное место в проекте |
-| `Medications1/Components/MedicationsPDFExporter.swift` | `enum` с двумя статическими методами: `generateData(meds:patientName:) -> Data?` и `fileURL(from:) throws -> URL` |
-| `DoctorVisitsView.swift` | История визитов к врачу по месяцам, свайп-удаление |
+| `MedicationsView.swift` | Расписание приёма лекарств по времени, чекбоксы, свайп, PDF через `MedicationsPDFExporter`. Использует `MedicationScheduleCalculator`. Содержит `AddMedicationSheet`, `EditMedicationSheet`. Empty state через `EmptyStatePlaceholder` (💊). `@AppStorage` для notifications/critical toggle |
+| `MedicationScheduleComponents.swift` | Общие компоненты: `MedicationTodayProgressCard`, `MedicationScheduleFormat`, `MedicationScheduleCopy` |
+| `Medications/WeekdayPickerView.swift` | Пикер дней недели (`@Binding<Set<Int>>`); `WeekdayOption` и `allWeekdayOptions` определены здесь — единственное место в проекте |
+| `Settings/SettingsView.swift` | Контейнер: NavigationStack, toolbar, save, alert смены категории. Держит общий `@State` (имя, статус лечения, даты) и прокидывает биндинги в секции. |
+| `Settings/SettingsPersonalSection.swift` | Секция "ЛИЧНЫЕ ДАННЫЕ" (имя, фамилия) |
+| `Settings/SettingsTreatmentSection.swift` | Секция "СТАТУС ЛЕЧЕНИЯ" (категория + даты) |
+| `Settings/SettingsNotificationsSection.swift` | Секция "УВЕДОМЛЕНИЯ" — полностью автономна через `@AppStorage` и `@State` для времён. Собирает `ReminderSettings` из текущих значений для передачи в `NotificationManager`. |
+| `Settings/SettingsCustomMetricsSection.swift` | Секция "ДОПОЛНИТЕЛЬНЫЕ ПОКАЗАТЕЛИ" — `@Query` + инициализация предустановленных в `.onAppear` |
+| `DoctorVisitsView.swift` | История визитов по месяцам, свайп-удаление. Empty state через `EmptyStatePlaceholder` (🏥) |
 | `DoctorVisitDetailView.swift` | Детали визита: врач, дата, заметки; редактирование |
 | `AddDoctorVisitView.swift` | Добавление/редактирование записи о визите |
 | `DoctorAppointmentSheet.swift` | Запись следующего визита + интеграция с EventKit |
 | `LabTestSheet.swift` | Дата следующего анализа + интеграция с EventKit |
-| `SettingsView.swift` | Личные данные, статус лечения, переключатели уведомлений с пикерами времени, управление кастомными метриками |
-| `AddCustomMetricView.swift` | Создание кастомной метрики: имя, единица, иконка (сетка SF Symbols, 6 колонок) |
-| `CustomMetricCardView.swift` | Карточка кастомной метрики: график LineMark+catmullRom, пустое состояние, переход в историю |
-| `AddCustomMetricEntrySheet.swift` | Добавление записи кастомной метрики: значение (decimalPad) + дата/время |
-| `CustomMetricListView.swift` | История записей кастомной метрики по месяцам, свайп-удаление, PDF экспорт со статистикой |
+| `AddCustomMetricView.swift` | Создание кастомной метрики: имя, единица, иконка (сетка SF Symbols) |
+| `CustomMetricCardView.swift` | Карточка кастомной метрики: график LineMark+catmullRom, пустое состояние |
+| `AddCustomMetricEntrySheet.swift` | Добавление записи: значение (decimalPad) + дата/время |
+| `CustomMetricListView.swift` | История записей по месяцам, свайп-удаление, PDF через `CustomMetricPDFExporter` |
+| `EmptyStatePlaceholder.swift` | Единый компонент пустого состояния: emoji/title/description/buttonTitle/action. Геометрия: круг 80×80 `Color.blue.opacity(0.1)`, эмодзи 36pt, кнопка tinted (blue text on `Color.blue.opacity(0.1)` background, cornerRadius 12). |
 | `ShareSheet.swift` | `UIViewControllerRepresentable` → `UIActivityViewController` |
-| `ContentPlaceholderView.swift` | Заглушка пустых состояний |
+| `ContentPlaceholderView.swift` | Простой текстовый placeholder (не empty state — для заглушек-филлеров) |
 
 ### Models (SwiftData)
 
@@ -109,17 +135,33 @@ iOS приложение для пациентов на гемодиализе, 
 
 | Файл | Содержимое |
 |------|-----------|
-| `NotificationManager.swift` | Синглтон `shared`. Методы: `requestAuthorizationIfNeeded()`, `rescheduleMedicationNotifications(for:)`, `scheduleDoctorAppointmentNotification(date:doctorName:)`, `scheduleLabTestNotification(date:)`, `scheduleMeasurementReminders()`, `updateNotifications()`, `disableMedicationNotifications()`. Группирует уведомления о лекарствах по (weekday, time). Поддерживает критические уведомления. |
-| `DateFormatters.swift` | `russianDate` ("d MMMM yyyy"), `russianDateTime` ("d MMMM yyyy, HH:mm"), `russianTime` ("HH:mm"), `russianMonthYear` ("LLLL yyyy"), `russianShortDate` ("d MMM"), `fileDate` ("yyyy-MM-dd"), `russianMonthSymbols: [String]` |
+| `AppStorageKeys.swift` | `enum AppStorageKeys` с типизированными строковыми константами: `notificationsEnabled`, `criticalNotificationsEnabled`, `bpReminderEnabled`, `weightReminderEnabled`, `bpMorningReminderTime`, `bpEveningReminderTime`, `weightReminderTime`, `doctorCalendarAddedTimestamp`, `labCalendarAddedTimestamp`. Использовать во всех `@AppStorage(...)` и `UserDefaults.standard.*(forKey:)`. |
+| `MedicationScheduleCalculator.swift` | Чистый value-type struct без SwiftUI. Принимает `[Medication]`, `[MedicationIntake]`, `now: Date` (инъектируемый), `calendar: Calendar`. Публикует: `todaysMedications`, `todayScheduleGroups` (группы по hour+minute), `intakeForToday(for:)`, `isTaken(_:)`, `takenCount`, `totalCount`, `allTaken`, `nextUpcomingGroup`. Пересоздаётся в каждом body. |
+| `NotificationManager.swift` | Синглтон `shared`. Не зависит от UserDefaults/AppStorageKeys — все настройки передаются параметрами. Методы: `requestAuthorizationIfNeeded()`, `rescheduleMedicationNotifications(for:enabled:critical:)`, `scheduleDoctorAppointmentNotification(date:doctorName:)`, `scheduleLabTestNotification(date:)`, `scheduleMeasurementReminders(_ settings: ReminderSettings)`, `updateNotifications(enabled:critical:)`, `disableMedicationNotifications()`, `printScheduledNotifications()`. Группирует уведомления о лекарствах по (weekday, hour, minute). Поддерживает `.timeSensitive` для критических. `ReminderSettings` — value-type struct с 5 настройками. |
+| `DateFormatters.swift` | `russianDate`, `russianDateTime`, `russianTime`, `russianMonthYear`, `russianShortDate`, `fileDate`, `russianMonthSymbols: [String]` |
+
+### Utils/PDFExport
+
+| Файл | Содержимое |
+|------|-----------|
+| `PDFReportRenderer.swift` | Низкоуровневый A4-рендерер. Init принимает `UIGraphicsPDFRendererContext` + margin (32 по умолчанию). Единое место шрифтов: title 20pt bold, subtitle 12pt, section 14pt semibold, header 12pt semibold, row 11pt monospaced. Методы: `drawHeader(reportTitle:patientName:periodDescription:)` рисует унифицированную шапку; `drawChart(_ image:height:)`; `drawTable(headers:columnWidthFractions:rows:monospaced:)` — пагинация с повтором заголовков, `monospaced: Bool = true` (false для текстовых таблиц); `drawSectionTitle(_:)`; `drawLines(_:)`; `drawStats(title:lines:)`; `beginNewPageIfNeeded(reserving:)`; `spacer(_:)`. |
+| `PDFExporter.swift` | Обёртка над `UIGraphicsPDFRenderer`. `makeData(margin:draw:) -> Data` — замыкание получает `PDFReportRenderer`. Thread-safe, можно из `Task.detached`. `saveToTempFile(data:fileNamePrefix:) throws -> URL` — санитизация имени (замена `/` и пробелов) + UUID. |
+| `PDFLabChartView.swift` | Общий SwiftUI `Chart` для лабораторных PDF. Принимает `[Point]` value-type. Рендерится в `UIImage` через `ImageRenderer` на главном потоке. |
+| `BloodPressurePDFExporter.swift` | `struct Record { date, systolic, diastolic, pulse }` + `makeData(records:periodDescription:patientName:)`. Таблица 5 колонок, итоги мин/макс/среднее по трём метрикам. |
+| `WeightPDFExporter.swift` | `struct Record { date, valueKg }` + `makeData(records:periodDescription:patientName:)`. Таблица 2 колонки, итоги мин/макс/среднее. |
+| `CustomMetricPDFExporter.swift` | `struct Entry { date, value }` + `makeData(metricName:unit:entries:patientName:)`. Итоги с количеством записей. |
+| `LabTestDetailPDFExporter.swift` | `struct Result { date, value }` + `makeData(testName:unit:results:periodDescription:patientName:chartImage:)`. График опциональный (≥ 2 точек). Единая шапка «Отчёт по анализу: X». Используется и в LabTestDetailView, и в LabResultsView. |
+| `LabResultsPDFExporter.swift` | `struct Test { name, unit, results: [LabTestDetailPDFExporter.Result] }` + `makeData(tests:patientName:)`. Многосекционный отчёт, каждый тест — своя секция с таблицей. Без графиков. |
+| `MedicationsPDFExporter.swift` | `struct Row { name, dosage, time }` + `generateData(rows:patientName:) -> Data?` + `fileURL(from:) throws -> URL`. Разбивка по времени приёма: сортировка по time, `drawSectionTitle` для каждой группы, таблица 2 колонки (Препарат / Дозировка) с `monospaced: false`. |
 
 ### Файлы данных
 
 | Файл | Содержимое |
 |------|-----------|
-| `Quotes.swift` | `allQuotes: [DailyQuote]` — ~75 цитат на русском. Можно добавлять. |
-| `LabTestCatalog.swift` | `predefinedLabTests` — 16 анализов (почки, электролиты, кровь, печень, иммуносупрессия). Можно добавлять. |
+| `Quotes.swift` | `allQuotes: [DailyQuote]` — ~75 цитат на русском |
+| `LabTestCatalog.swift` | `predefinedLabTests` — 16 анализов (почки, электролиты, кровь, печень, иммуносупрессия) |
 | `CustomMetricCatalog.swift` | `predefined: [CustomMetricDefinition]` — 7 метрик: Шаги, Активность, Вода, Сон, Температура, Сатурация, Уровень сахара |
-| `RenalTrackerApp.swift` | `@main`, ModelContainer с прямым `Schema([11 моделей])`, запрос разрешений на уведомления; комментарий с roadmap версионирования перед релизом |
+| `RenalTrackerApp.swift` | `@main`, ModelContainer с прямым `Schema([11 моделей])`, roadmap-комментарий версионирования перед релизом. В `.task` читает `UserDefaults.standard` один раз (нет owner'а `@AppStorage` на этом уровне) и вызывает `updateNotifications(enabled:critical:)`. |
 | `PreviewData.swift` | Тестовые данные для Xcode Preview |
 
 ---
@@ -150,6 +192,19 @@ ZStack {
 }
 ```
 
+### Empty state
+Всегда через компонент `EmptyStatePlaceholder`:
+```swift
+EmptyStatePlaceholder(
+    emoji: "💊",
+    title: "Нет лекарств в расписании",
+    description: "Добавьте первое лекарство,\nчтобы видеть расписание приёма",
+    buttonTitle: "Добавить первое лекарство",
+    action: { isShowingAddMedication = true }
+)
+```
+Описание обычно разбивается на 2 строки через `\n`. Эмодзи подбирается под экран: 💊 (Лекарства), 🧪 (Анализы), 🏥 (Приёмы). Не используй `largeTitle` и `buttonStyle(.borderedProminent)` для пустых состояний — это старый стиль.
+
 ### Типографика
 - Основной текст: `.font(.system(size: 15, weight: .medium))`
 - Вторичный текст: `.font(.system(size: 13))` + `.foregroundStyle(.secondary)`
@@ -171,12 +226,6 @@ HStack(spacing: 8) {
 .textCase(nil)
 ```
 
-### Прогресс-бар
-```swift
-// Используй готовый компонент:
-MedicationTodayProgressCard(takenCount: takenCount, totalCount: totalCount)
-```
-
 ### Свайп-действия (List только)
 ```swift
 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -189,8 +238,7 @@ MedicationTodayProgressCard(takenCount: takenCount, totalCount: totalCount)
 ### Чекбокс (onTapGesture, не Button)
 ```swift
 ZStack {
-    Circle()
-        .stroke(isTaken ? Color.green : Color(.separator), lineWidth: 1.5)
+    Circle().stroke(isTaken ? Color.green : Color(.separator), lineWidth: 1.5)
         .frame(width: 26, height: 26)
     if isTaken {
         Image(systemName: "checkmark")
@@ -206,13 +254,17 @@ ZStack {
 ## Ключевые правила
 
 - **Даты** — только через `DateFormatters.swift`, никаких локальных `DateFormatter()`
+- **UserDefaults-ключи** — только через `AppStorageKeys.*`, никаких строковых литералов
+- **Empty state** — только через `EmptyStatePlaceholder` (эталонный компонент)
 - **swipeActions** — работают только в `List`, не в `ScrollView`/`VStack`
 - **Язык** — весь текст интерфейса на русском
 - **Производительность** — не использовать `.tracking()` и `.kerning()`
 - **Timer** — всегда инвалидировать в `.onDisappear`
-- **Уведомления** — вызывать `rescheduleMedicationNotifications` только в `.onAppear`/`.onChange`, не в `body`
-- **SwiftData** — `@Query` только в View; бизнес-логику выносить в методы View
+- **SwiftData + Task.detached** — `@Model`-объекты НЕ пересекают границу detached. Делать value-snapshot на главном потоке (struct с примитивами), передавать его в detached.
+- **NotificationManager** — все настройки передаются параметрами, методы НЕ читают `UserDefaults` изнутри
+- **SwiftData** — `@Query` только в View; бизнес-логику выносить в чистые value-type калькуляторы типа `MedicationScheduleCalculator`
 - **DatePicker** — не закрывать автоматически через `onChange`; пикер остаётся открытым до нажатия "Сохранить"/"Отмена"
+- **PDF** — все отчёты через `PDFReportRenderer` + `PDFExporter`. Шапка единая: `drawHeader(reportTitle:patientName:periodDescription:)`. Никаких `UIGraphicsPDFRenderer` / `NSString.draw` в View.
 - **xcodebuild** — никогда не запускать
 
 ---
@@ -224,8 +276,12 @@ ZStack {
 | Чёрная полоса при свайпе в List | Использовать `listRowBackground(Color(.secondarySystemBackground))` на самой строке, не `.background()` |
 | List не скругляет секции | Использовать `.listStyle(.insetGrouped)`, не `.plain` |
 | Строка растягивается при свайпе | Добавить `listRowInsets(EdgeInsets(top:0,leading:16,bottom:0,trailing:16))` явно |
-| DatePicker закрывался при выборе | Удалены все `onChange { showDatePicker = false }` из 7 файлов |
+| DatePicker закрывался при выборе | Удалены все `onChange { showDatePicker = false }` |
 | Дублирование Timer на re-appear | Инвалидировать в `.onDisappear`, проверять `refreshTimer == nil` в `.onAppear` |
+| ContentView flash OnboardingView при cold start | Убрано промежуточное `@State`, проверка `profiles.contains(where:)` прямо в body |
+| CustomMetric PDF белый экран | `@Model`-объекты не пересекают границу `Task.detached`. Value-snapshot до detached. |
+| Multiple commands produce при перемещении файлов | После переноса файла в другую папку: проверить, что старая ссылка удалена из Xcode-navigator (красный файл — Remove Reference), Clean Build Folder |
+| Xcode file not found после `git pull` | Новые файлы, добавленные через правку `project.pbxproj` руками, иногда нужно Clean + DerivedData очистить |
 
 ---
 
@@ -237,9 +293,9 @@ ZStack {
 
 **Перед первым релизом в App Store:**
 1. Создать `AppMigrationPlan.swift`: зафиксировать текущие модели как `SchemaV1` (вложенные `@Model`-копии)
-2. Объявить `AppMigrationPlan: SchemaMigrationPlan` и `typealias CurrentSchema = SchemaV1`
-3. Заменить `Schema([...])` на `Schema(CurrentSchema.models)` и передать `migrationPlan:` в `ModelContainer`
-4. Все последующие изменения моделей — через новые версии `SchemaVN`
+2. Объявить `AppMigrationPlan: SchemaMigrationPlan` с пустым массивом stages
+3. Передать `migrationPlan: AppMigrationPlan.self` в `ModelContainer`
+4. Все последующие изменения моделей — через новые версии `SchemaVN` с новыми stages
 
 ---
 
