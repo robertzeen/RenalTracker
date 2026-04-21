@@ -7,6 +7,17 @@ import Foundation
 import UserNotifications
 import SwiftData
 
+/// Все настройки ежедневных напоминаний об измерениях.
+/// Собирается в call-site из @AppStorage/@State и передаётся в NotificationManager.
+/// Value-type — безопасен для передачи между изоляциями.
+struct ReminderSettings {
+    let bpEnabled: Bool
+    let bpMorning: Date
+    let bpEvening: Date
+    let weightEnabled: Bool
+    let weightTime: Date
+}
+
 /// Управление локальными уведомлениями по приёму лекарств.
 ///
 /// Уведомления создаются не под каждое лекарство, а под
@@ -100,16 +111,13 @@ final class NotificationManager {
 
     /// Полностью пересоздаёт уведомления по приёму лекарств.
     /// Вызывать при изменении списка лекарств или их расписания.
-    func rescheduleMedicationNotifications(for medications: [Medication]) {
+    func rescheduleMedicationNotifications(for medications: [Medication], enabled: Bool, critical: Bool) {
         center.getPendingNotificationRequests { [weak self] requests in
             guard let self = self else { return }
             let medIds = requests.map(\.identifier).filter { $0.hasPrefix("med_") }
             self.center.removePendingNotificationRequests(withIdentifiers: medIds)
-
-            // Создаём новые уведомления только если они включены
-            let enabled = UserDefaults.standard.object(forKey: AppStorageKeys.notificationsEnabled) as? Bool ?? true
             guard enabled else { return }
-            self.scheduleNotifications(for: medications)
+            self.scheduleNotifications(for: medications, critical: critical)
         }
     }
 
@@ -123,7 +131,7 @@ final class NotificationManager {
     }
 
     /// Группирует лекарства по (день недели, время) и создаёт уведомления для каждой группы.
-    private func scheduleNotifications(for medications: [Medication]) {
+    private func scheduleNotifications(for medications: [Medication], critical: Bool) {
         let activeMeds = medications.filter { $0.isActive && !$0.daysOfWeek.isEmpty }
 
         print("[Notifications] scheduleNotifications: \(activeMeds.count) активных лекарств")
@@ -147,11 +155,11 @@ final class NotificationManager {
         }
 
         for (key, meds) in groups {
-            scheduleNotification(for: meds, key: key)
+            scheduleNotification(for: meds, key: key, critical: critical)
         }
     }
 
-    private func scheduleNotification(for medications: [Medication], key: Key) {
+    private func scheduleNotification(for medications: [Medication], key: Key, critical: Bool) {
         guard let first = medications.first else { return }
 
         let timeString = DateFormatter.russianTime.string(from: first.time)
@@ -172,7 +180,6 @@ final class NotificationManager {
         content.body = body
         content.badge = 1
 
-        let critical = UserDefaults.standard.bool(forKey: AppStorageKeys.criticalNotificationsEnabled)
         if critical {
             content.interruptionLevel = .timeSensitive
             content.sound = .defaultCriticalSound(withAudioVolume: 0.8)
@@ -200,41 +207,32 @@ final class NotificationManager {
 
     // MARK: - Напоминания об измерениях
 
-    /// Пересоздаёт ежедневные напоминания об измерении давления и веса
-    /// на основе текущих настроек в UserDefaults.
-    func scheduleMeasurementReminders() {
+    /// Пересоздаёт ежедневные напоминания об измерении давления и веса.
+    func scheduleMeasurementReminders(_ settings: ReminderSettings) {
         center.removePendingNotificationRequests(
             withIdentifiers: ["bp_morning", "bp_evening", "weight_reminder"]
         )
 
-        let defaults = UserDefaults.standard
-
-        if defaults.bool(forKey: AppStorageKeys.bpReminderEnabled) {
-            let morningDefault = Calendar.current.date(from: DateComponents(hour: 8,  minute: 0))  ?? Date()
-            let eveningDefault = Calendar.current.date(from: DateComponents(hour: 20, minute: 0))  ?? Date()
-            let morning = defaults.object(forKey: AppStorageKeys.bpMorningReminderTime) as? Date ?? morningDefault
-            let evening = defaults.object(forKey: AppStorageKeys.bpEveningReminderTime) as? Date ?? eveningDefault
+        if settings.bpEnabled {
             scheduleDaily(
                 id: "bp_morning",
-                time: morning,
+                time: settings.bpMorning,
                 title: "Измерьте давление 💊",
                 body: "Не забудьте измерить давление и пульс"
             )
             scheduleDaily(
                 id: "bp_evening",
-                time: evening,
+                time: settings.bpEvening,
                 title: "Измерьте давление 💊",
                 body: "Вечернее измерение давления и пульса"
             )
         }
 
-        if defaults.bool(forKey: AppStorageKeys.weightReminderEnabled) {
-            let weightDefault = Calendar.current.date(from: DateComponents(hour: 7, minute: 30)) ?? Date()
-            let time = defaults.object(forKey: AppStorageKeys.weightReminderTime) as? Date ?? weightDefault
+        if settings.weightEnabled {
             scheduleDaily(
                 id: "weight_reminder",
-                time: time,
-                title: "Взвеситесь ⚖️",
+                time: settings.weightTime,
+                title: "Взвесьтесь ⚖️",
                 body: "Время зафиксировать вес"
             )
         }
@@ -266,12 +264,8 @@ final class NotificationManager {
 
     /// Обновляет звук и уровень прерывания для уже запланированных
     /// уведомлений о лекарствах без необходимости доступа к SwiftData.
-    func updateNotifications() {
-        // Если уведомления выключены пользователем — ничего не делаем
-        let enabled = UserDefaults.standard.object(forKey: AppStorageKeys.notificationsEnabled) as? Bool ?? true
+    func updateNotifications(enabled: Bool, critical: Bool) {
         guard enabled else { return }
-
-        let critical = UserDefaults.standard.bool(forKey: AppStorageKeys.criticalNotificationsEnabled)
 
         center.getPendingNotificationRequests { [weak self] requests in
             guard let self else { return }

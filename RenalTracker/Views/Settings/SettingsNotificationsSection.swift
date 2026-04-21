@@ -32,6 +32,17 @@ struct SettingsNotificationsSection: View {
             ?? Calendar.current.date(from: DateComponents(hour: 7, minute: 30)) ?? Date())
     }
 
+    /// Собирает текущие настройки напоминаний для передачи в NotificationManager.
+    private var currentReminderSettings: ReminderSettings {
+        ReminderSettings(
+            bpEnabled: bpReminderEnabled,
+            bpMorning: bpMorningTime,
+            bpEvening: bpEveningTime,
+            weightEnabled: weightReminderEnabled,
+            weightTime: weightReminderTime
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("УВЕДОМЛЕНИЯ")
@@ -54,7 +65,7 @@ struct SettingsNotificationsSection: View {
                         .labelsHidden()
                         .onChange(of: notificationsEnabled) { _, enabled in
                             if enabled {
-                                NotificationManager.shared.updateNotifications()
+                                NotificationManager.shared.updateNotifications(enabled: notificationsEnabled, critical: criticalNotificationsEnabled)
                             } else {
                                 NotificationManager.shared.disableMedicationNotifications()
                                 criticalNotificationsEnabled = false
@@ -81,7 +92,7 @@ struct SettingsNotificationsSection: View {
                         .disabled(!notificationsEnabled)
                         .onChange(of: criticalNotificationsEnabled) { _, _ in
                             if notificationsEnabled {
-                                NotificationManager.shared.updateNotifications()
+                                NotificationManager.shared.updateNotifications(enabled: notificationsEnabled, critical: criticalNotificationsEnabled)
                             }
                         }
                 }
@@ -106,7 +117,7 @@ struct SettingsNotificationsSection: View {
                                 showBPMorningPicker = false
                                 showBPEveningPicker = false
                             }
-                            NotificationManager.shared.scheduleMeasurementReminders()
+                            NotificationManager.shared.scheduleMeasurementReminders(currentReminderSettings)
                         }
                 }
                 .padding(14)
@@ -142,7 +153,7 @@ struct SettingsNotificationsSection: View {
                             .frame(maxWidth: .infinity)
                             .onChange(of: bpMorningTime) { _, _ in
                                 UserDefaults.standard.set(bpMorningTime, forKey: AppStorageKeys.bpMorningReminderTime)
-                                NotificationManager.shared.scheduleMeasurementReminders()
+                                NotificationManager.shared.scheduleMeasurementReminders(currentReminderSettings)
                             }
                     }
 
@@ -176,7 +187,7 @@ struct SettingsNotificationsSection: View {
                             .frame(maxWidth: .infinity)
                             .onChange(of: bpEveningTime) { _, _ in
                                 UserDefaults.standard.set(bpEveningTime, forKey: AppStorageKeys.bpEveningReminderTime)
-                                NotificationManager.shared.scheduleMeasurementReminders()
+                                NotificationManager.shared.scheduleMeasurementReminders(currentReminderSettings)
                             }
                     }
                 }
@@ -197,7 +208,7 @@ struct SettingsNotificationsSection: View {
                         .labelsHidden()
                         .onChange(of: weightReminderEnabled) { _, enabled in
                             if !enabled { showWeightPicker = false }
-                            NotificationManager.shared.scheduleMeasurementReminders()
+                            NotificationManager.shared.scheduleMeasurementReminders(currentReminderSettings)
                         }
                 }
                 .padding(14)
@@ -232,7 +243,7 @@ struct SettingsNotificationsSection: View {
                             .frame(maxWidth: .infinity)
                             .onChange(of: weightReminderTime) { _, _ in
                                 UserDefaults.standard.set(weightReminderTime, forKey: AppStorageKeys.weightReminderTime)
-                                NotificationManager.shared.scheduleMeasurementReminders()
+                                NotificationManager.shared.scheduleMeasurementReminders(currentReminderSettings)
                             }
                     }
                 }

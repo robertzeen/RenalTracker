@@ -67,7 +67,9 @@ struct RenalTrackerApp: App {
                     }
                     if granted == true {
                         await MainActor.run {
-                            NotificationManager.shared.updateNotifications()
+                            let enabled = UserDefaults.standard.object(forKey: AppStorageKeys.notificationsEnabled) as? Bool ?? true
+                            let critical = UserDefaults.standard.bool(forKey: AppStorageKeys.criticalNotificationsEnabled)
+                            NotificationManager.shared.updateNotifications(enabled: enabled, critical: critical)
                         }
                     }
                 }

@@ -27,6 +27,9 @@ struct MedicationsView: View {
     @State private var isGeneratingPDF = false
     @State private var isShowingExportErrorAlert = false
 
+    @AppStorage(AppStorageKeys.notificationsEnabled) private var notificationsEnabled = true
+    @AppStorage(AppStorageKeys.criticalNotificationsEnabled) private var criticalNotificationsEnabled = false
+
     private var scheduleCalculator: MedicationScheduleCalculator {
         MedicationScheduleCalculator(medications: medications, intakes: intakes)
     }
@@ -195,10 +198,18 @@ struct MedicationsView: View {
             Text("Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.")
         }
         .onAppear {
-            NotificationManager.shared.rescheduleMedicationNotifications(for: medications)
+            NotificationManager.shared.rescheduleMedicationNotifications(
+                for: medications,
+                enabled: notificationsEnabled,
+                critical: criticalNotificationsEnabled
+            )
         }
         .onChange(of: medications) { _, newMeds in
-            NotificationManager.shared.rescheduleMedicationNotifications(for: newMeds)
+            NotificationManager.shared.rescheduleMedicationNotifications(
+                for: newMeds,
+                enabled: notificationsEnabled,
+                critical: criticalNotificationsEnabled
+            )
         }
     }
 
