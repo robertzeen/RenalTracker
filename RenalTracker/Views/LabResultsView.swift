@@ -57,22 +57,13 @@ struct LabResultsView: View {
             NavigationStack {
                 Group {
                     if trackedTests.isEmpty {
-                        VStack(spacing: 24) {
-                            VStack(spacing: 8) {
-                                Text("Анализы")
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
-                                Text("Добавьте первый отслеживаемый анализ, чтобы видеть результаты и динамику по нему.")
-                                    .font(.subheadline)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Button("Добавить отслеживаемый анализ") {
-                                isShowingAddTrackedTest = true
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding()
+                        EmptyStatePlaceholder(
+                            emoji: "🧪",
+                            title: "Нет отслеживаемых анализов",
+                            description: "Добавьте первый анализ,\nчтобы видеть результаты и динамику",
+                            buttonTitle: "Добавить первый анализ",
+                            action: { isShowingAddTrackedTest = true }
+                        )
                     } else {
                         List {
                             Section {

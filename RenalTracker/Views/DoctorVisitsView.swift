@@ -147,34 +147,12 @@ struct DoctorVisitsView: View {
     // MARK: - Пустой экран
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 80, height: 80)
-                Text("🏥")
-                    .font(.system(size: 36))
-            }
-            Text("Нет записей о приёмах")
-                .font(.headline)
-                .foregroundStyle(.primary)
-            Text("Здесь будет история ваших\nприёмов у врача")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                isShowingAddVisit = true
-            } label: {
-                Text("Добавить первый приём")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.blue)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(12)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 80)
+        EmptyStatePlaceholder(
+            emoji: "🏥",
+            title: "Нет записей о приёмах",
+            description: "Здесь будет история ваших\nприёмов у врача",
+            buttonTitle: "Добавить первый приём",
+            action: { isShowingAddVisit = true }
+        )
     }
 }

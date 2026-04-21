@@ -217,22 +217,13 @@ struct MedicationsView: View {
 
     @ViewBuilder
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 8) {
-                Text("Лекарства")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("Добавьте принимаемые лекарства, чтобы видеть расписание приёма и отмечать выполненные дозы.")
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-            }
-            Button("Добавить принимаемые лекарства") {
-                isShowingAddMedication = true
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
+        EmptyStatePlaceholder(
+            emoji: "💊",
+            title: "Нет лекарств в расписании",
+            description: "Добавьте первое лекарство,\nчтобы видеть расписание приёма",
+            buttonTitle: "Добавить первое лекарство",
+            action: { isShowingAddMedication = true }
+        )
     }
 
     @ViewBuilder

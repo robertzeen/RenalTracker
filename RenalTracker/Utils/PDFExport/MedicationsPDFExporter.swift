@@ -15,18 +15,29 @@ enum MedicationsPDFExporter {
 
     static func generateData(rows: [Row], patientName: String?) -> Data? {
         guard !rows.isEmpty else { return nil }
+
+        // Группируем по времени приёма, сохраняем порядок от раннего к позднему.
+        // Внутри каждой группы — сортировка по имени препарата (чтобы порядок был стабильным).
+        let grouped = Dictionary(grouping: rows, by: { $0.time })
+        let sortedGroups: [(time: String, rows: [Row])] = grouped
+            .map { (time: $0.key, rows: $0.value.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) }
+            .sorted { $0.time < $1.time }
+
         return PDFExporter.makeData { r in
             r.drawHeader(
                 reportTitle: "Список принимаемых лекарств",
                 patientName: patientName,
                 periodDescription: nil
             )
-            r.drawTable(
-                headers: ["Препарат", "Дозировка", "Время приёма"],
-                columnWidthFractions: [0.45, 0.25, 0.30],
-                rows: rows.map { [$0.name, $0.dosage, $0.time] },
-                monospaced: false
-            )
+            for group in sortedGroups {
+                r.drawSectionTitle(group.time)
+                r.drawTable(
+                    headers: ["Препарат", "Дозировка"],
+                    columnWidthFractions: [0.65, 0.35],
+                    rows: group.rows.map { [$0.name, $0.dosage] },
+                    monospaced: false
+                )
+            }
         }
     }
 
