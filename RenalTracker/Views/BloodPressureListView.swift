@@ -31,6 +31,7 @@ struct BloodPressureListView: View {
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
     @State private var isShowingNoDataAlert = false
+    @State private var isShowingExportErrorAlert = false
 
     private enum ExportPeriod {
         case days7, days30, all
@@ -160,6 +161,11 @@ struct BloodPressureListView: View {
         } message: {
             Text("Добавьте записи или выберите другой период для экспорта.")
         }
+        .alert("Не удалось сформировать отчёт", isPresented: $isShowingExportErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.")
+        }
     }
 
     @ViewBuilder
@@ -229,6 +235,7 @@ struct BloodPressureListView: View {
             isSharePresented = true
         } catch {
             print("Failed to write PDF: \(error)")
+            isShowingExportErrorAlert = true
         }
     }
 }

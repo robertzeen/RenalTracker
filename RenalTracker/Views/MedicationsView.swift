@@ -25,6 +25,7 @@ struct MedicationsView: View {
     @State private var exportFileURL: URL?
     @State private var isShowingExportSheet = false
     @State private var isGeneratingPDF = false
+    @State private var isShowingExportErrorAlert = false
 
     private var scheduleCalculator: MedicationScheduleCalculator {
         MedicationScheduleCalculator(medications: medications, intakes: intakes)
@@ -188,6 +189,11 @@ struct MedicationsView: View {
                 Text("«\(med.name)» будет удалено из расписания. Это действие нельзя отменить.")
             }
         }
+        .alert("Не удалось сформировать отчёт", isPresented: $isShowingExportErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.")
+        }
         .onAppear {
             NotificationManager.shared.rescheduleMedicationNotifications(for: medications)
         }
@@ -315,6 +321,10 @@ struct MedicationsView: View {
         do {
             fileURL = try MedicationsPDFExporter.fileURL(from: data)
         } catch {
+            print("Failed to save medications PDF: \(error)")
+            await MainActor.run {
+                isShowingExportErrorAlert = true
+            }
             return
         }
 

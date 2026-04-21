@@ -20,6 +20,7 @@ struct CustomMetricListView: View {
     @State private var isSharePresented = false
     @State private var isGeneratingPDF = false
     @State private var isShowingNoDataAlert = false
+    @State private var isShowingExportErrorAlert = false
 
     private var sortedEntries: [CustomMetricEntry] {
         metric.entries.sorted { $0.date > $1.date }
@@ -78,12 +79,18 @@ struct CustomMetricListView: View {
                 entries: snapshot,
                 patientName: name
             )
-            let url = try? PDFExporter.saveToTempFile(data: data, fileNamePrefix: filePrefix)
-            await MainActor.run {
-                isGeneratingPDF = false
-                if let url {
+            do {
+                let url = try PDFExporter.saveToTempFile(data: data, fileNamePrefix: filePrefix)
+                await MainActor.run {
+                    isGeneratingPDF = false
                     pdfURL = url
                     isSharePresented = true
+                }
+            } catch {
+                print("Failed to save custom metric PDF: \(error)")
+                await MainActor.run {
+                    isGeneratingPDF = false
+                    isShowingExportErrorAlert = true
                 }
             }
         }
@@ -206,6 +213,11 @@ struct CustomMetricListView: View {
             Button("Закрыть", role: .cancel) { }
         } message: {
             Text("Добавьте записи или выберите другой период для экспорта.")
+        }
+        .alert("Не удалось сформировать отчёт", isPresented: $isShowingExportErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.")
         }
     }
 }

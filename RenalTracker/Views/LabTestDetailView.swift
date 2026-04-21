@@ -26,6 +26,7 @@ struct LabTestDetailView: View, Identifiable {
     @State private var pdfURL: URL?
     @State private var resultToDelete: LabResult?
     @State private var isShowingNoDataAlert = false
+    @State private var isShowingExportErrorAlert = false
 
     private var patientDisplayName: String {
         guard let profile = profiles.first else { return "не указан" }
@@ -213,6 +214,11 @@ struct LabTestDetailView: View, Identifiable {
         } message: {
             Text("Добавьте записи или выберите другой период для экспорта.")
         }
+        .alert("Не удалось сформировать отчёт", isPresented: $isShowingExportErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.")
+        }
     }
 
     // MARK: - PDF Export
@@ -252,6 +258,7 @@ struct LabTestDetailView: View, Identifiable {
             pdfURL = url
         } catch {
             print("Failed to save lab PDF: \(error)")
+            isShowingExportErrorAlert = true
         }
     }
 }

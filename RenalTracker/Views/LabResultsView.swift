@@ -35,6 +35,7 @@ struct LabResultsView: View {
     @State private var pdfURL: URL?
     @State private var isSharePresented = false
     @State private var isShowingNoDataAlert = false
+    @State private var isShowingExportErrorAlert = false
     private var calendar: Calendar { Calendar.current }
 
     private var patientDisplayName: String {
@@ -227,6 +228,11 @@ struct LabResultsView: View {
         } message: {
             Text("Добавьте записи или выберите другой период для экспорта.")
         }
+        .alert("Не удалось сформировать отчёт", isPresented: $isShowingExportErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.")
+        }
     }
 
     // MARK: - Helpers
@@ -267,6 +273,7 @@ struct LabResultsView: View {
             isSharePresented = true
         } catch {
             print("Failed to save lab results PDF: \(error)")
+            isShowingExportErrorAlert = true
         }
     }
 
@@ -333,6 +340,7 @@ struct LabResultsView: View {
             isSharePresented = true
         } catch {
             print("Failed to save single lab PDF: \(error)")
+            isShowingExportErrorAlert = true
         }
     }
 }
