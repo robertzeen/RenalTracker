@@ -73,11 +73,6 @@ struct HomeView: View {
         return "друг"
     }
 
-    var todayQuote: DailyQuote {
-        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
-        return allQuotes[dayOfYear % allQuotes.count]
-    }
-
     // MARK: - Medications schedule
 
     private var scheduleCalculator: MedicationScheduleCalculator {
@@ -120,9 +115,6 @@ struct HomeView: View {
                         isShowingLabTestDateSheet: $isShowingLabTestDateSheet
                     )
                     .padding(.vertical, 4)
-
-                    HomeQuoteView(quote: todayQuote)
-                        .padding(.vertical, 4)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
