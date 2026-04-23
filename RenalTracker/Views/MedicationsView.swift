@@ -26,6 +26,7 @@ struct MedicationsView: View {
     @State private var isShowingExportSheet = false
     @State private var isGeneratingPDF = false
     @State private var isShowingExportErrorAlert = false
+    @State private var isShowingAllMedications = false
 
     @AppStorage(AppStorageKeys.notificationsEnabled) private var notificationsEnabled = true
     @AppStorage(AppStorageKeys.criticalNotificationsEnabled) private var criticalNotificationsEnabled = false
@@ -127,6 +128,19 @@ struct MedicationsView: View {
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
+                            isShowingAllMedications = true
+                        } label: {
+                            ZStack {
+                                Circle().fill(Color(.secondarySystemBackground)).frame(width: 32, height: 32)
+                                Image(systemName: "list.bullet")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityLabel("Все лекарства")
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
                             isShowingAddMedication = true
                         } label: {
                             ZStack {
@@ -165,6 +179,9 @@ struct MedicationsView: View {
         .sheet(item: $medicationToEdit) { med in
             EditMedicationSheet(medication: med)
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $isShowingAllMedications) {
+            AllMedicationsView()
         }
         .sheet(isPresented: $isShowingExportSheet) {
             if let url = exportFileURL {
@@ -411,7 +428,7 @@ private struct AddMedicationSheet: View {
 
 // MARK: - Редактирование лекарства
 
-private struct EditMedicationSheet: View {
+struct EditMedicationSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
