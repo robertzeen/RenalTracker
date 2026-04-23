@@ -67,8 +67,9 @@ struct LabTestDetailView: View, Identifiable {
                         description: Text("Добавьте первое значение для анализа \"\(test.name)\".")
                     )
                 } else {
-                    ScrollView {
-                        VStack(spacing: 16) {
+                    VStack(spacing: 0) {
+                        // График наверху — фиксированной высоты, не скроллится
+                        Group {
                             if let domain = chartYDomain {
                                 Chart {
                                     ForEach(sortedResults) { result in
@@ -78,8 +79,6 @@ struct LabTestDetailView: View, Identifiable {
                                 }
                                 .chartYScale(domain: domain)
                                 .chartXAxis(.hidden)
-                                .frame(height: 220)
-                                .padding(.horizontal)
                             } else {
                                 Chart {
                                     ForEach(sortedResults) { result in
@@ -87,53 +86,48 @@ struct LabTestDetailView: View, Identifiable {
                                     }
                                 }
                                 .chartXAxis(.hidden)
-                                .frame(height: 220)
-                                .padding(.horizontal)
                             }
+                        }
+                        .frame(height: 220)
+                        .padding(.horizontal)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
 
-                            let reversedResults = Array(sortedResults.reversed())
-                            LazyVStack(spacing: 0) {
-                                ForEach(Array(reversedResults.enumerated()), id: \.element.id) { index, result in
-                                    Button {
-                                        resultToEdit = result
+                        // Список записей — List со swipe-actions
+                        List {
+                            ForEach(Array(sortedResults.reversed()), id: \.id) { result in
+                                Button {
+                                    resultToEdit = result
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(formattedValue(result))
+                                                .font(.system(size: 15, weight: .medium))
+                                                .foregroundStyle(.primary)
+                                            Text(DateFormatter.russianDateTime.string(from: result.date))
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .listRowBackground(Color(.secondarySystemBackground))
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        resultToDelete = result
                                     } label: {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 3) {
-                                                Text(formattedValue(result))
-                                                    .font(.system(size: 15, weight: .medium))
-                                                    .foregroundStyle(.primary)
-                                                Text(DateFormatter.russianDateTime.string(from: result.date))
-                                                    .font(.system(size: 13))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            Spacer()
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 12))
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                        .padding(14)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                        Button(role: .destructive) {
-                                            resultToDelete = result
-                                        } label: {
-                                            Label("Удалить", systemImage: "trash")
-                                        }
-                                    }
-
-                                    if index < reversedResults.count - 1 {
-                                        Divider().padding(.leading, 14)
+                                        Label("Удалить", systemImage: "trash")
                                     }
                                 }
                             }
-                            .background(Color(.secondarySystemBackground))
-                            .cornerRadius(16)
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
                         }
+                        .listStyle(.insetGrouped)
+                        .scrollContentBackground(.hidden)
                     }
                 }
             }
