@@ -10,6 +10,8 @@ struct AddCustomMetricView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    @Query private var allMetrics: [CustomMetric]
+
     @State private var name = ""
     @State private var unit = ""
     @State private var selectedIcon = "star.fill"
@@ -124,13 +126,15 @@ struct AddCustomMetricView: View {
         let trimmedUnit = unit.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty, !trimmedUnit.isEmpty else { return }
 
+        let maxOrder = allMetrics.map(\.sortOrder).max() ?? 0
+        let newOrder = maxOrder + 1
         let metric = CustomMetric(
             name: trimmedName,
             unit: trimmedUnit,
             icon: selectedIcon,
             isActive: true,
             isCustom: true,
-            sortOrder: 100
+            sortOrder: newOrder
         )
         modelContext.insert(metric)
         try? modelContext.save()

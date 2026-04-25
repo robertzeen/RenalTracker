@@ -147,6 +147,7 @@ struct IndicatorsView: View {
         }
         .onAppear {
             initializePredefinedMetricsIfNeeded()
+            migrateLegacySortOrders()
         }
     }
 
@@ -280,10 +281,33 @@ struct IndicatorsView: View {
         try? modelContext.save()
     }
 
+    /// Создаёт предустановленные метрики из CustomMetricCatalog при первом запуске.
+    /// Идемпотентна — повторные вызовы ничего не делают, если каталог уже инициализирован.
     private func initializePredefinedMetricsIfNeeded() {
+        let hasPredefinedMetrics = allMetrics.contains { !$0.isCustom }
+        guard !hasPredefinedMetrics else { return }
+
+        for definition in CustomMetricCatalog.predefined {
+            let metric = CustomMetric(
+                name: definition.name,
+                unit: definition.unit,
+                icon: definition.icon,
+                isActive: false,
+                isCustom: false,
+                sortOrder: definition.sortOrder
+            )
+            modelContext.insert(metric)
+        }
+        try? modelContext.save()
+    }
+
+    /// Миграция исторических данных: чинит sortOrder для метрик, созданных до правильной
+    /// логики назначения порядка. Будет ненужной, когда у всех пользователей данные уже
+    /// мигрированы — можно удалить через 6+ месяцев после релиза.
+    private func migrateLegacySortOrders() {
         var changed = false
 
-        // Normalize sortOrder for existing predefined metrics
+        // Нормализация sortOrder для предустановленных метрик
         for definition in CustomMetricCatalog.predefined {
             if let metric = allMetrics.first(where: { $0.name == definition.name && !$0.isCustom }),
                metric.sortOrder != definition.sortOrder {
@@ -292,8 +316,8 @@ struct IndicatorsView: View {
             }
         }
 
-        // Fix sortOrder for custom metrics that still have the placeholder value 100
-        let maxPredefinedOrder = CustomMetricCatalog.predefined.map { $0.sortOrder }.max() ?? 0
+        // Custom-метрики с placeholder sortOrder == 100 (legacy bug в AddCustomMetricView)
+        let maxPredefinedOrder = CustomMetricCatalog.predefined.map(\.sortOrder).max() ?? 0
         let customMetrics = allMetrics.filter { $0.isCustom }
         for (i, metric) in customMetrics.enumerated() where metric.sortOrder == 100 {
             metric.sortOrder = maxPredefinedOrder + i + 1
