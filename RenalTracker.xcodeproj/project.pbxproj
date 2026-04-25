@@ -66,6 +66,7 @@
 		32D6B3662F96865E0032C065 /* AppStorageKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3652F96865E0032C065 /* AppStorageKeys.swift */; };
 		32D6B3682F97F51C0032C065 /* EmptyStatePlaceholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3672F97F51C0032C065 /* EmptyStatePlaceholder.swift */; };
 		32D6B36A2F9A97150032C065 /* AllMedicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B3692F9A97150032C065 /* AllMedicationsView.swift */; };
+		32D6B36C2F9A9DEB0032C065 /* AddMetricSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6B36B2F9A9DEA0032C065 /* AddMetricSheet.swift */; };
 		RT0012F5360F30063D338 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0011F5360F30063D338 /* UserProfile.swift */; };
 		RT0022F5360F30063D338 /* BloodPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0021F5360F30063D338 /* BloodPressure.swift */; };
 		RT0032F5360F30063D338 /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0031F5360F30063D338 /* Weight.swift */; };
@@ -161,6 +162,7 @@
 		32D6B3652F96865E0032C065 /* AppStorageKeys.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppStorageKeys.swift; sourceTree = "<group>"; };
 		32D6B3672F97F51C0032C065 /* EmptyStatePlaceholder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EmptyStatePlaceholder.swift; sourceTree = "<group>"; };
 		32D6B3692F9A97150032C065 /* AllMedicationsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AllMedicationsView.swift; sourceTree = "<group>"; };
+		32D6B36B2F9A9DEA0032C065 /* AddMetricSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AddMetricSheet.swift; sourceTree = "<group>"; };
 		RT0011F5360F30063D338 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		RT0021F5360F30063D338 /* BloodPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressure.swift; sourceTree = "<group>"; };
 		RT0031F5360F30063D338 /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
@@ -340,6 +342,7 @@
 		RTGRP2F5360F30063D338 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				32D6B36B2F9A9DEA0032C065 /* AddMetricSheet.swift */,
 				32D6B3672F97F51C0032C065 /* EmptyStatePlaceholder.swift */,
 				3221BDB02F922CEC0072851D /* Settings */,
 				3221BDA42F921DF10072851D /* Medications */,
@@ -520,6 +523,7 @@
 				3279F3102F7335C4007186B5 /* AddTrackedLabTestSheet.swift in Sources */,
 				32C32F132F5583540063D338 /* PreviewData.swift in Sources */,
 				32D6B3662F96865E0032C065 /* AppStorageKeys.swift in Sources */,
+				32D6B36C2F9A9DEB0032C065 /* AddMetricSheet.swift in Sources */,
 				32A15D2B2F72E15A00C94C43 /* LabTestSheet.swift in Sources */,
 				3221BDB82F922D130072851D /* SettingsTreatmentSection.swift in Sources */,
 				32D6B3642F9626240032C065 /* LabTestDetailPDFExporter.swift in Sources */,
