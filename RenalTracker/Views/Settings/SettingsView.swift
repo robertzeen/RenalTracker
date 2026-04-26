@@ -29,9 +29,6 @@ struct SettingsView: View {
     @State private var pdOngoing: Bool
     @State private var transplantDate: Date
 
-    // MARK: - Кастомные метрики
-    @State private var isShowingAddCustomMetric = false
-
     init(profile: UserProfile, onDismiss: @escaping () -> Void) {
         self.profile = profile
         self.onDismiss = onDismiss
@@ -70,7 +67,6 @@ struct SettingsView: View {
                         showChangeAlert: $showChangeAlert
                     )
                     SettingsNotificationsSection()
-                    SettingsCustomMetricsSection(isShowingAddCustomMetric: $isShowingAddCustomMetric)
                 }
                 .padding(16)
             }
@@ -93,10 +89,6 @@ struct SettingsView: View {
                             to: nil, from: nil, for: nil)
                     }
                 }
-            }
-            .sheet(isPresented: $isShowingAddCustomMetric) {
-                AddCustomMetricView()
-                    .presentationDetents([.medium, .large])
             }
             .alert("Изменить статус лечения?", isPresented: $showChangeAlert) {
                 Button("Отмена", role: .cancel) { pendingCategory = nil }
