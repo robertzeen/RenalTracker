@@ -89,17 +89,18 @@ struct WeightCardView: View {
 
             Divider()
 
-            HStack {
-                Spacer()
-                NavigationLink {
-                    WeightListView()
-                } label: {
+            NavigationLink {
+                WeightListView()
+            } label: {
+                HStack {
+                    Spacer()
                     Text("Все измерения →")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.blue)
                 }
+                .padding(14)
             }
-            .padding(14)
+            .buttonStyle(.plain)
         }
         .background(Color(.secondarySystemBackground))
         .cornerRadius(16)

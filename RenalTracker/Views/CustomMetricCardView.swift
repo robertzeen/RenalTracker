@@ -132,10 +132,10 @@ struct CustomMetricCardView: View {
                 CustomMetricListView(metric: metric)
             } label: {
                 HStack {
+                    Spacer()
                     Text("Все измерения →")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.blue)
-                    Spacer()
                 }
                 .padding(14)
             }

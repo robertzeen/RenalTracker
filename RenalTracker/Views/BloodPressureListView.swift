@@ -17,7 +17,6 @@ extension BloodPressure: Identifiable {
 
 struct BloodPressureListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \BloodPressure.date, order: .reverse)
     private var records: [BloodPressure]
@@ -102,18 +101,7 @@ struct BloodPressureListView: View {
             }
         }
         .navigationTitle("Давление и пульс")
-        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                        Text("Назад")
-                    }
-                }
-            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 if !records.isEmpty {
                     Button { showExportDialog = true } label: {
