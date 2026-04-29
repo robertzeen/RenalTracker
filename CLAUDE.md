@@ -17,7 +17,7 @@ iOS приложение для пациентов на гемодиализе, 
 
 ### Завершено
 - Онбординг (5 шагов)
-- Главный экран (дашборд с метриками, лекарствами, событиями, цитатой)
+- Главный экран (дашборд с метриками, лекарствами, событиями)
 - Метрики: АД, пульс, вес — графики, история, PDF экспорт
 - Анализы: каталог (16 тестов) + кастомные, графики, PDF экспорт
 - Лекарства: расписание, отметка приёма, свайп-действия, PDF экспорт с разбивкой по времени приёма
@@ -62,6 +62,30 @@ iOS приложение для пациентов на гемодиализе, 
 - **Единый компонент пустых состояний** — `EmptyStatePlaceholder`: эмодзи в голубом круге + заголовок + описание + tinted-кнопка. Используется в DoctorVisitsView (🏥), MedicationsView (💊), LabResultsView (🧪). Старый стиль (`largeTitle` + `buttonStyle(.borderedProminent)`) полностью удалён.
 
 - Переименование вкладки "Показатели" → "Метрики" во всех 6 файлах
+
+- **Удалены цитаты** — файлы `Quotes.swift` и `HomeQuoteView.swift` удалены. HomeView больше не показывает цитату дня.
+
+- **AllMedicationsView** — экран «Все лекарства» для редактирования/удаления лекарств, которые не видны на текущий день. Доступен из MedicationsView через кнопку list.bullet в toolbar. `EditMedicationSheet` сделан non-private для переиспользования.
+
+- **Удаление записи анализа** — `LabTestDetailView` переделан с `ScrollView + LazyVStack` на `VStack { Chart; List }`. swipeActions теперь работают (требуют List). График фиксирован сверху, записи скроллятся внизу.
+
+- **Перенос управления метриками** на экран Метрики (`IndicatorsView`):
+  - Кнопка-шестерёнка в toolbar → режим управления с drag-and-drop (.onMove), toggle видимости, удаление кастомных через красный минус (EditMode)
+  - Dashed-border плитка "+ Добавить метрику" внизу → `AddMetricSheet` с каталогом + "Добавить свою"
+  - `initializePredefinedMetricsIfNeeded()` + `migrateLegacySortOrders()` + `migrateDisplayTypesForCatalogMetrics()` в .onAppear
+  - `SettingsCustomMetricsSection` удалена, раздел "ДОПОЛНИТЕЛЬНЫЕ ПОКАЗАТЕЛИ" из настроек убран
+
+- **Динамический sortOrder** — `AddCustomMetricView.save()` теперь использует `max(existing) + 1` вместо хардкода 100. Legacy значения мигрируются при запуске.
+
+- **MetricDisplayType** — enum `.continuous` / `.cumulative` для типа графика:
+  - Поле `displayTypeRaw: String` в `CustomMetric`, computed property `displayType`
+  - Поле `displayType` в `CustomMetricDefinition` (каталог)
+  - Миграция для существующих предустановленных метрик по имени из каталога
+  - `CustomMetricCardView` рендерит `BarMark` с агрегацией по дням для `.cumulative`, `LineMark` для `.continuous`
+  - Заголовок карточки: "Последнее: X" для continuous, "Сегодня: X мл" / "Нет записей сегодня" для cumulative
+  - Выбор типа графика в `AddCustomMetricView` с двумя radio-кнопками (иконка + описание)
+
+- **Унификация навигации** — убраны кастомные back-кнопки из `WeightListView` и `BloodPressureListView`. Теперь используется системная кнопка "← Метрики", edge-swipe-back работает. Ссылка "Все измерения →" выровнена справа с широкой тап-зоной во всех карточках метрик.
 
 ### В работе / Незавершено
 
@@ -131,11 +155,10 @@ iOS приложение для пациентов на гемодиализе, 
 | `ContentView.swift` | Корневой view: онбординг или MainTabView; проверка `profiles.contains(where: hasCompletedOnboarding)` напрямую из `@Query` |
 | `MainTabView.swift` | TabView с 5 вкладками |
 | `OnboardingView.swift` | 5-шаговый онбординг: 3 intro-слайда, личные данные, статус лечения |
-| `HomeView.swift` | Дашборд: приветствие, последние метрики, лекарства на сегодня, события, цитата; Timer каждые 60 сек. Использует `MedicationScheduleCalculator` с `now: currentTime`. |
+| `HomeView.swift` | Дашборд: приветствие, последние метрики, лекарства на сегодня, события; Timer каждые 60 сек. Использует `MedicationScheduleCalculator` с `now: currentTime`. |
 | `HomeGreetingView.swift` | Приветствие + имя + статус ("День N после трансплантации") |
 | `HomeMetricsView.swift` | Последние значения АД и веса с датами |
 | `HomeEventsView.swift` | Ближайший визит и дата анализа с бейджами |
-| `HomeQuoteView.swift` | Мотивационная цитата (ротация по дню года из `Quotes.swift`) |
 | `HomeMedicationsView.swift` | Расписание лекарств на сегодня для главного экрана |
 | `IndicatorsView.swift` | Графики АД/пульса/веса + активные кастомные метрики, фильтры 7/30/все |
 | `BloodPressureCardView.swift` | Карточка с графиком систолического/диастолического + пульс |
@@ -149,20 +172,21 @@ iOS приложение для пациентов на гемодиализе, 
 | `LabTestCatalog.swift` | 16 предустановленных анализов с референсными значениями |
 | `CustomMetricCatalog.swift` | 7 предустановленных кастомных метрик здоровья |
 | `MedicationsView.swift` | Расписание приёма лекарств по времени, чекбоксы, свайп, PDF через `MedicationsPDFExporter`. Использует `MedicationScheduleCalculator`. Содержит `AddMedicationSheet`, `EditMedicationSheet`. Empty state через `EmptyStatePlaceholder` (💊). `@AppStorage` для notifications/critical toggle |
+| `Medications/AllMedicationsView.swift` | Полный список всех лекарств с возможностью редактирования и удаления. Доступен из toolbar MedicationsView |
 | `MedicationScheduleComponents.swift` | Общие компоненты: `MedicationTodayProgressCard`, `MedicationScheduleFormat`, `MedicationScheduleCopy` |
 | `Medications/WeekdayPickerView.swift` | Пикер дней недели (`@Binding<Set<Int>>`); `WeekdayOption` и `allWeekdayOptions` определены здесь — единственное место в проекте |
 | `Settings/SettingsView.swift` | Контейнер: NavigationStack, toolbar, save, alert смены категории. Держит общий `@State` (имя, статус лечения, даты) и прокидывает биндинги в секции. |
 | `Settings/SettingsPersonalSection.swift` | Секция "ЛИЧНЫЕ ДАННЫЕ" (имя, фамилия) |
 | `Settings/SettingsTreatmentSection.swift` | Секция "СТАТУС ЛЕЧЕНИЯ" (категория + даты) |
 | `Settings/SettingsNotificationsSection.swift` | Секция "УВЕДОМЛЕНИЯ" — полностью автономна через `@AppStorage` и `@State` для времён. Собирает `ReminderSettings` из текущих значений для передачи в `NotificationManager`. |
-| `Settings/SettingsCustomMetricsSection.swift` | Секция "ДОПОЛНИТЕЛЬНЫЕ ПОКАЗАТЕЛИ" — `@Query` + инициализация предустановленных в `.onAppear` |
 | `DoctorVisitsView.swift` | История визитов по месяцам, свайп-удаление. Empty state через `EmptyStatePlaceholder` (🏥) |
 | `DoctorVisitDetailView.swift` | Детали визита: врач, дата, заметки; редактирование |
 | `AddDoctorVisitView.swift` | Добавление/редактирование записи о визите |
 | `DoctorAppointmentSheet.swift` | Запись следующего визита + интеграция с EventKit |
 | `LabTestSheet.swift` | Дата следующего анализа + интеграция с EventKit |
-| `AddCustomMetricView.swift` | Создание кастомной метрики: имя, единица, иконка (сетка SF Symbols) |
-| `CustomMetricCardView.swift` | Карточка кастомной метрики: график LineMark+catmullRom, пустое состояние |
+| `AddCustomMetricView.swift` | Создание кастомной метрики: имя, единица, иконка (сетка SF Symbols), выбор типа графика (continuous / cumulative) |
+| `AddMetricSheet.swift` | Sheet для добавления метрики: каталог предустановленных с toggle + кнопка "Добавить свою" |
+| `CustomMetricCardView.swift` | Карточка кастомной метрики: LineMark для continuous, BarMark с агрегацией по дням для cumulative. Заголовок зависит от displayType |
 | `AddCustomMetricEntrySheet.swift` | Добавление записи: значение (decimalPad) + дата/время |
 | `CustomMetricListView.swift` | История записей по месяцам, свайп-удаление, PDF через `CustomMetricPDFExporter` |
 | `EmptyStatePlaceholder.swift` | Единый компонент пустого состояния: emoji/title/description/buttonTitle/action. Геометрия: круг 80×80 `Color.blue.opacity(0.1)`, эмодзи 36pt, кнопка tinted (blue text on `Color.blue.opacity(0.1)` background, cornerRadius 12). |
@@ -182,7 +206,8 @@ iOS приложение для пациентов на гемодиализе, 
 | `MedicationIntake` | `date: Date`, `isTaken: Bool`, `medication: Medication` |
 | `WellBeing` | `weakness: Int`, `headache: Int`, `swelling: Int`, `date: Date` (шкала 1–5) |
 | `DoctorVisit` | `id: UUID`, `date: Date`, `doctorName: String?`, `notes: String?`, `createdAt: Date` |
-| `CustomMetric` | `id: UUID`, `name: String`, `unit: String`, `icon: String`, `isActive: Bool`, `isCustom: Bool`, `sortOrder: Int`, `entries: [CustomMetricEntry]` (cascade), `createdAt: Date` |
+| `CustomMetric` | `id: UUID`, `name: String`, `unit: String`, `icon: String`, `isActive: Bool`, `isCustom: Bool`, `sortOrder: Int`, `displayTypeRaw: String`, `entries: [CustomMetricEntry]` (cascade), `createdAt: Date`; computed `displayType: MetricDisplayType` |
+| `MetricDisplayType` | enum `.continuous` / `.cumulative` с computed properties `title`, `description`, `iconName`. Определяет тип графика для кастомных метрик |
 | `CustomMetricEntry` | `id: UUID`, `value: Double`, `date: Date`, `metric: CustomMetric?` |
 
 ### Utils
@@ -212,7 +237,6 @@ iOS приложение для пациентов на гемодиализе, 
 
 | Файл | Содержимое |
 |------|-----------|
-| `Quotes.swift` | `allQuotes: [DailyQuote]` — ~75 цитат на русском |
 | `LabTestCatalog.swift` | `predefinedLabTests` — 16 анализов (почки, электролиты, кровь, печень, иммуносупрессия) |
 | `CustomMetricCatalog.swift` | `predefined: [CustomMetricDefinition]` — 7 метрик: Шаги, Активность, Вода, Сон, Температура, Сатурация, Уровень сахара |
 | `RenalTrackerApp.swift` | `@main`, ModelContainer с прямым `Schema([11 моделей])`, roadmap-комментарий версионирования перед релизом. В `.task` читает `UserDefaults.standard` один раз (нет owner'а `@AppStorage` на этом уровне) и вызывает `updateNotifications(enabled:critical:)`. |
@@ -337,6 +361,7 @@ ZStack {
 | Multiple commands produce при перемещении файлов | После переноса файла в другую папку: проверить, что старая ссылка удалена из Xcode-navigator (красный файл — Remove Reference), Clean Build Folder |
 | Xcode file not found после `git pull` | Новые файлы, добавленные через правку `project.pbxproj` руками, иногда нужно Clean + DerivedData очистить |
 | Тон, формулировки, тексты для пациента | Финальные тексты утверждает автор (Роберт). Промпты от Claude дают placeholder-варианты для согласования, не финальный текст для продакшена |
+| SwiftData crash при добавлении non-optional поля в @Model | Lightweight migration не подхватывает Swift `init` дефолты для существующих записей. На время разработки — переустановить приложение. К релизу: либо делать новые поля optional, либо вводить полный AppMigrationPlan |
 
 ---
 
