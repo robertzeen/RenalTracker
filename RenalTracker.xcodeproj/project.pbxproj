@@ -72,6 +72,8 @@
 		43D833992FABCF9500A7D30C /* ThoughtEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833972FABCF9500A7D30C /* ThoughtEntry.swift */; };
 		43D8339A2FABCF9500A7D30C /* WellbeingEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833982FABCF9500A7D30C /* WellbeingEntry.swift */; };
 		43D8339B2FABCF9500A7D30C /* SymptomCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833962FABCF9500A7D30C /* SymptomCatalog.swift */; };
+		43D8339E2FABD10500A7D30C /* AddWellbeingEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D8339C2FABD10500A7D30C /* AddWellbeingEntrySheet.swift */; };
+		43D833A12FABD3C500A7D30C /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833A02FABD3C100A7D30C /* FlowLayout.swift */; };
 		RT0012F5360F30063D338 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0011F5360F30063D338 /* UserProfile.swift */; };
 		RT0022F5360F30063D338 /* BloodPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0021F5360F30063D338 /* BloodPressure.swift */; };
 		RT0032F5360F30063D338 /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0031F5360F30063D338 /* Weight.swift */; };
@@ -172,6 +174,8 @@
 		43D833962FABCF9500A7D30C /* SymptomCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomCatalog.swift; sourceTree = "<group>"; };
 		43D833972FABCF9500A7D30C /* ThoughtEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtEntry.swift; sourceTree = "<group>"; };
 		43D833982FABCF9500A7D30C /* WellbeingEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WellbeingEntry.swift; sourceTree = "<group>"; };
+		43D8339C2FABD10500A7D30C /* AddWellbeingEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddWellbeingEntrySheet.swift; sourceTree = "<group>"; };
+		43D833A02FABD3C100A7D30C /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		RT0011F5360F30063D338 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		RT0021F5360F30063D338 /* BloodPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressure.swift; sourceTree = "<group>"; };
 		RT0031F5360F30063D338 /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
@@ -328,6 +332,22 @@
 			path = PDFExport;
 			sourceTree = "<group>";
 		};
+		43D8339D2FABD10500A7D30C /* Journal */ = {
+			isa = PBXGroup;
+			children = (
+				43D8339C2FABD10500A7D30C /* AddWellbeingEntrySheet.swift */,
+			);
+			path = Journal;
+			sourceTree = "<group>";
+		};
+		43D8339F2FABD3B200A7D30C /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				43D833A02FABD3C100A7D30C /* FlowLayout.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		RTGRP1F5360F30063D338 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -351,6 +371,8 @@
 		RTGRP2F5360F30063D338 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				43D8339F2FABD3B200A7D30C /* Components */,
+				43D8339D2FABD10500A7D30C /* Journal */,
 				3238897A2F8A55DE000680B2 /* AddCustomMetricEntrySheet.swift */,
 				323889762F8A53FA000680B2 /* AddCustomMetricView.swift */,
 				32A15D2C2F72E55500C94C43 /* AddDoctorVisitView.swift */,
@@ -546,6 +568,7 @@
 				RT0012F5360F30063D338 /* UserProfile.swift in Sources */,
 				3279F3082F7335C4007186B5 /* WeightCardView.swift in Sources */,
 				3221BDB72F922D130072851D /* SettingsPersonalSection.swift in Sources */,
+				43D833A12FABD3C500A7D30C /* FlowLayout.swift in Sources */,
 				32C32F262F573AD50063D338 /* NotificationManager.swift in Sources */,
 				3221BDB62F922D130072851D /* SettingsNotificationsSection.swift in Sources */,
 				3279F30A2F7335C4007186B5 /* ShareSheet.swift in Sources */,
@@ -576,6 +599,7 @@
 				3238897E2F8A55DE000680B2 /* CustomMetricListView.swift in Sources */,
 				RT0092F5360F30063D338 /* LabResultsView.swift in Sources */,
 				32D6B35E2F9547E30032C065 /* WeightPDFExporter.swift in Sources */,
+				43D8339E2FABD10500A7D30C /* AddWellbeingEntrySheet.swift in Sources */,
 				RT00A2F5360F30063D338 /* MedicationsView.swift in Sources */,
 				RT00C2F5360F30063D338 /* ContentPlaceholderView.swift in Sources */,
 				323889782F8A53FA000680B2 /* AddCustomMetricView.swift in Sources */,

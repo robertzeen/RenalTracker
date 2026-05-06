@@ -21,6 +21,8 @@ struct HomeViewTransplant: View {
 
     @State private var currentTime = Date()
     @State private var refreshTimer: Timer?
+    
+    @State private var isShowingWellbeingTest = false
 
     @Query private var profiles: [UserProfile]
     @Query(sort: \BloodPressure.date, order: .reverse) private var bloodPressureRecords: [BloodPressure]
