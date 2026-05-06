@@ -69,12 +69,14 @@
 		43D8338F2FA7D1C400A7D30C /* HomeViewPD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D8338D2FA7D1C400A7D30C /* HomeViewPD.swift */; };
 		43D833902FA7D1C400A7D30C /* HomeViewTransplant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D8338E2FA7D1C400A7D30C /* HomeViewTransplant.swift */; };
 		43D833912FA7D1C400A7D30C /* HomeViewHemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D8338C2FA7D1C400A7D30C /* HomeViewHemo.swift */; };
+		43D833992FABCF9500A7D30C /* ThoughtEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833972FABCF9500A7D30C /* ThoughtEntry.swift */; };
+		43D8339A2FABCF9500A7D30C /* WellbeingEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833982FABCF9500A7D30C /* WellbeingEntry.swift */; };
+		43D8339B2FABCF9500A7D30C /* SymptomCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D833962FABCF9500A7D30C /* SymptomCatalog.swift */; };
 		RT0012F5360F30063D338 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0011F5360F30063D338 /* UserProfile.swift */; };
 		RT0022F5360F30063D338 /* BloodPressure.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0021F5360F30063D338 /* BloodPressure.swift */; };
 		RT0032F5360F30063D338 /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0031F5360F30063D338 /* Weight.swift */; };
 		RT0042F5360F30063D338 /* LabResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0041F5360F30063D338 /* LabResult.swift */; };
 		RT0052F5360F30063D338 /* Medication.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0051F5360F30063D338 /* Medication.swift */; };
-		RT0062F5360F30063D338 /* WellBeing.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0061F5360F30063D338 /* WellBeing.swift */; };
 		RT0072F5360F30063D338 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0071F5360F30063D338 /* HomeView.swift */; };
 		RT0082F5360F30063D338 /* IndicatorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0081F5360F30063D338 /* IndicatorsView.swift */; };
 		RT0092F5360F30063D338 /* LabResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RT0091F5360F30063D338 /* LabResultsView.swift */; };
@@ -167,12 +169,14 @@
 		43D8338C2FA7D1C400A7D30C /* HomeViewHemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewHemo.swift; sourceTree = "<group>"; };
 		43D8338D2FA7D1C400A7D30C /* HomeViewPD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewPD.swift; sourceTree = "<group>"; };
 		43D8338E2FA7D1C400A7D30C /* HomeViewTransplant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewTransplant.swift; sourceTree = "<group>"; };
+		43D833962FABCF9500A7D30C /* SymptomCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomCatalog.swift; sourceTree = "<group>"; };
+		43D833972FABCF9500A7D30C /* ThoughtEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtEntry.swift; sourceTree = "<group>"; };
+		43D833982FABCF9500A7D30C /* WellbeingEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WellbeingEntry.swift; sourceTree = "<group>"; };
 		RT0011F5360F30063D338 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		RT0021F5360F30063D338 /* BloodPressure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressure.swift; sourceTree = "<group>"; };
 		RT0031F5360F30063D338 /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
 		RT0041F5360F30063D338 /* LabResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabResult.swift; sourceTree = "<group>"; };
 		RT0051F5360F30063D338 /* Medication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Medication.swift; sourceTree = "<group>"; };
-		RT0061F5360F30063D338 /* WellBeing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WellBeing.swift; sourceTree = "<group>"; };
 		RT0071F5360F30063D338 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		RT0081F5360F30063D338 /* IndicatorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorsView.swift; sourceTree = "<group>"; };
 		RT0091F5360F30063D338 /* LabResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabResultsView.swift; sourceTree = "<group>"; };
@@ -300,10 +304,10 @@
 			isa = PBXGroup;
 			children = (
 				32D6B3652F96865E0032C065 /* AppStorageKeys.swift */,
-				32D6B3542F9541230032C065 /* PDFExport */,
+				32C32F212F5723DF0063D338 /* DateFormatters.swift */,
 				3221BDAC2F9229890072851D /* MedicationScheduleCalculator.swift */,
 				32C32F242F573AD50063D338 /* NotificationManager.swift */,
-				32C32F212F5723DF0063D338 /* DateFormatters.swift */,
+				32D6B3542F9541230032C065 /* PDFExport */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -327,17 +331,19 @@
 		RTGRP1F5360F30063D338 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				RT0021F5360F30063D338 /* BloodPressure.swift */,
 				3238896F2F8A4F88000680B2 /* CustomMetric.swift */,
 				323889702F8A4F88000680B2 /* CustomMetricEntry.swift */,
-				RT0021F5360F30063D338 /* BloodPressure.swift */,
 				32C32F272F576AEE0063D338 /* DoctorVisit.swift */,
 				RT0041F5360F30063D338 /* LabResult.swift */,
 				RT0051F5360F30063D338 /* Medication.swift */,
 				32C32F182F55C72B0063D338 /* MedicationIntake.swift */,
+				43D833962FABCF9500A7D30C /* SymptomCatalog.swift */,
+				43D833972FABCF9500A7D30C /* ThoughtEntry.swift */,
 				32C32F142F55BCE60063D338 /* TrackedLabTest.swift */,
 				RT0011F5360F30063D338 /* UserProfile.swift */,
 				RT0031F5360F30063D338 /* Weight.swift */,
-				RT0061F5360F30063D338 /* WellBeing.swift */,
+				43D833982FABCF9500A7D30C /* WellbeingEntry.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -345,31 +351,29 @@
 		RTGRP2F5360F30063D338 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				43D8338C2FA7D1C400A7D30C /* HomeViewHemo.swift */,
-				43D8338D2FA7D1C400A7D30C /* HomeViewPD.swift */,
-				43D8338E2FA7D1C400A7D30C /* HomeViewTransplant.swift */,
-				32D6B36B2F9A9DEA0032C065 /* AddMetricSheet.swift */,
-				32D6B3672F97F51C0032C065 /* EmptyStatePlaceholder.swift */,
-				3221BDB02F922CEC0072851D /* Settings */,
-				3221BDA42F921DF10072851D /* Medications */,
 				3238897A2F8A55DE000680B2 /* AddCustomMetricEntrySheet.swift */,
-				323889792F8A55DE000680B2 /* CustomMetricCardView.swift */,
-				3238897B2F8A55DE000680B2 /* CustomMetricListView.swift */,
 				323889762F8A53FA000680B2 /* AddCustomMetricView.swift */,
-				323889752F8A53FA000680B2 /* CustomMetricCatalog.swift */,
 				32A15D2C2F72E55500C94C43 /* AddDoctorVisitView.swift */,
+				32D6B36B2F9A9DEA0032C065 /* AddMetricSheet.swift */,
 				3279F3032F7335C4007186B5 /* AddTrackedLabTestSheet.swift */,
 				3279F3052F7335C4007186B5 /* BloodPressureCardView.swift */,
 				3279F3042F7335C4007186B5 /* BloodPressureListView.swift */,
 				RT00C1F5360F30063D338 /* ContentPlaceholderView.swift */,
+				323889792F8A55DE000680B2 /* CustomMetricCardView.swift */,
+				323889752F8A53FA000680B2 /* CustomMetricCatalog.swift */,
+				3238897B2F8A55DE000680B2 /* CustomMetricListView.swift */,
 				32A15D282F72E15900C94C43 /* DoctorAppointmentSheet.swift */,
 				32C32F2A2F576AF70063D338 /* DoctorVisitDetailView.swift */,
 				32C32F292F576AF70063D338 /* DoctorVisitsView.swift */,
+				32D6B3672F97F51C0032C065 /* EmptyStatePlaceholder.swift */,
 				3279F2FF2F7335C3007186B5 /* HomeEventsView.swift */,
 				3279F2F92F7335C3007186B5 /* HomeGreetingView.swift */,
 				3279F3022F7335C4007186B5 /* HomeMedicationsView.swift */,
 				3279F2FE2F7335C3007186B5 /* HomeMetricsView.swift */,
 				RT0071F5360F30063D338 /* HomeView.swift */,
+				43D8338C2FA7D1C400A7D30C /* HomeViewHemo.swift */,
+				43D8338D2FA7D1C400A7D30C /* HomeViewPD.swift */,
+				43D8338E2FA7D1C400A7D30C /* HomeViewTransplant.swift */,
 				RT0081F5360F30063D338 /* IndicatorsView.swift */,
 				RT0091F5360F30063D338 /* LabResultsView.swift */,
 				3279F3132F73379D007186B5 /* LabTestCatalog.swift */,
@@ -383,6 +387,8 @@
 				3279F2FD2F7335C3007186B5 /* ShareSheet.swift */,
 				3279F2FB2F7335C3007186B5 /* WeightCardView.swift */,
 				3279F2FC2F7335C3007186B5 /* WeightListView.swift */,
+				3221BDA42F921DF10072851D /* Medications */,
+				3221BDB02F922CEC0072851D /* Settings */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -560,7 +566,6 @@
 				323889772F8A53FA000680B2 /* CustomMetricCatalog.swift in Sources */,
 				3279F3162F735081007186B5 /* MedicationScheduleComponents.swift in Sources */,
 				32C32F282F576AEE0063D338 /* DoctorVisit.swift in Sources */,
-				RT0062F5360F30063D338 /* WellBeing.swift in Sources */,
 				32D6B3632F9626240032C065 /* PDFLabChartView.swift in Sources */,
 				3238897D2F8A55DE000680B2 /* AddCustomMetricEntrySheet.swift in Sources */,
 				RT0072F5360F30063D338 /* HomeView.swift in Sources */,
@@ -582,6 +587,9 @@
 				32C32F222F5723DF0063D338 /* DateFormatters.swift in Sources */,
 				3279F3142F73379D007186B5 /* LabTestCatalog.swift in Sources */,
 				32C32F192F55C72B0063D338 /* MedicationIntake.swift in Sources */,
+				43D833992FABCF9500A7D30C /* ThoughtEntry.swift in Sources */,
+				43D8339A2FABCF9500A7D30C /* WellbeingEntry.swift in Sources */,
+				43D8339B2FABCF9500A7D30C /* SymptomCatalog.swift in Sources */,
 				323889712F8A4F88000680B2 /* CustomMetric.swift in Sources */,
 				32C32F2B2F576AF70063D338 /* DoctorVisitsView.swift in Sources */,
 				32D6B35D2F9547E30032C065 /* BloodPressurePDFExporter.swift in Sources */,

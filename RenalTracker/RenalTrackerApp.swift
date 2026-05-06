@@ -31,8 +31,9 @@ struct RenalTrackerApp: App {
             TrackedLabTest.self,
             Medication.self,
             MedicationIntake.self,
-            WellBeing.self,
             DoctorVisit.self,
+            WellbeingEntry.self,
+            ThoughtEntry.self,
             CustomMetric.self,
             CustomMetricEntry.self
         ])

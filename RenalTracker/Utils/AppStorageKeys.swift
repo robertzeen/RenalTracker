@@ -43,4 +43,9 @@ enum AppStorageKeys {
 
     /// Timestamp (секунды с 1970) последнего добавления сдачи анализов в Календарь iOS. Double.
     static let labCalendarAddedTimestamp = "labCalendarAddedTimestamp"
+
+    // MARK: - Журнал
+
+    /// Кастомные симптомы, добавленные пациентом вручную. [String].
+    static let customSymptoms = "customSymptoms"
 }
